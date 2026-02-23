@@ -1,0 +1,254 @@
+{
+  "dates": {
+    "columns": {
+      "dateID": {
+        "type": "int",
+        "suggestedFilter": "Range",
+        "isNullable": false
+      },
+      "dateDate": {
+        "type": "date",
+        "suggestedFilter": "Range",
+        "isNullable": false
+      },
+      "dateCountry": {
+        "type": "varchar",
+        "suggestedFilter": "Search",
+        "isNullable": false
+      },
+      "dateCity": {
+        "type": "varchar",
+        "suggestedFilter": "Search",
+        "isNullable": false
+      },
+      "dateVenue": {
+        "type": "varchar",
+        "suggestedFilter": "Search",
+        "isNullable": false
+      },
+      "dateStart": {
+        "type": "time",
+        "suggestedFilter": "Range",
+        "isNullable": false
+      },
+      "datePrice": {
+        "type": "float",
+        "suggestedFilter": "Range",
+        "isNullable": false
+      },
+      "datePaidAmount": {
+        "type": "decimal",
+        "suggestedFilter": "Range",
+        "isNullable": false
+      },
+      "dateCurrency": {
+        "type": "varchar",
+        "suggestedFilter": "Search",
+        "isNullable": false
+      },
+      "dateStatus": {
+        "type": "int",
+        "suggestedFilter": "Range",
+        "isNullable": false
+      },
+      "bandID": {
+        "type": "int",
+        "suggestedFilter": "Range",
+        "isNullable": false
+      },
+      "dateOwner": {
+        "type": "int",
+        "suggestedFilter": "Range",
+        "isNullable": false
+      },
+      "dateUpdated": {
+        "type": "datetime",
+        "suggestedFilter": "Range",
+        "isNullable": false
+      },
+      "dateDescription": {
+        "type": "int",
+        "suggestedFilter": "Range",
+        "isNullable": false
+      }
+    },
+    "relationships": []
+  },
+  "exrate": {
+    "columns": {
+      "exrateID": {
+        "type": "int",
+        "suggestedFilter": "Range",
+        "isNullable": false
+      },
+      "exrateEurToRsd": {
+        "type": "decimal",
+        "suggestedFilter": "Range",
+        "isNullable": false
+      },
+      "exrateRsdToEur": {
+        "type": "decimal",
+        "suggestedFilter": "Range",
+        "isNullable": false
+      },
+      "exrateUpdated": {
+        "type": "datetime",
+        "suggestedFilter": "Range",
+        "isNullable": true
+      }
+    },
+    "relationships": []
+  },
+  "groups": {
+    "columns": {
+      "groupID": {
+        "type": "int",
+        "suggestedFilter": "Range",
+        "isNullable": false
+      },
+      "groupName": {
+        "type": "varchar",
+        "suggestedFilter": "Search",
+        "isNullable": false
+      },
+      "groupOwner": {
+        "type": "int",
+        "suggestedFilter": "Range",
+        "isNullable": false
+      }
+    },
+    "relationships": []
+  },
+  "payments": {
+    "columns": {
+      "paymentID": {
+        "type": "int",
+        "suggestedFilter": "Range",
+        "isNullable": false
+      },
+      "dateID": {
+        "type": "int",
+        "suggestedFilter": "By",
+        "isNullable": true,
+        "sourceTable": "dates"
+      },
+      "bulkGroup": {
+        "type": "varchar",
+        "suggestedFilter": "Search",
+        "isNullable": true
+      },
+      "amountEUR": {
+        "type": "decimal",
+        "suggestedFilter": "Range",
+        "isNullable": false
+      },
+      "amountOriginal": {
+        "type": "decimal",
+        "suggestedFilter": "Range",
+        "isNullable": true
+      },
+      "currency": {
+        "type": "varchar",
+        "suggestedFilter": "Search",
+        "isNullable": true
+      },
+      "exchangeRate": {
+        "type": "decimal",
+        "suggestedFilter": "Range",
+        "isNullable": true
+      },
+      "paymentDate": {
+        "type": "timestamp",
+        "suggestedFilter": "Range",
+        "isNullable": false
+      }
+    },
+    "relationships": [
+      {
+        "column": "dateID",
+        "references": "dates",
+        "refColumn": "dateID"
+      }
+    ]
+  },
+  "status": {
+    "columns": {
+      "statusID": {
+        "type": "int",
+        "suggestedFilter": "Range",
+        "isNullable": false
+      },
+      "statusName": {
+        "type": "varchar",
+        "suggestedFilter": "Search",
+        "isNullable": false
+      },
+      "statusColor": {
+        "type": "varchar",
+        "suggestedFilter": "Search",
+        "isNullable": false
+      }
+    },
+    "relationships": []
+  },
+  "type": {
+    "columns": {
+      "typeID": {
+        "type": "int",
+        "suggestedFilter": "Range",
+        "isNullable": false
+      },
+      "bandName": {
+        "type": "varchar",
+        "suggestedFilter": "Search",
+        "isNullable": false
+      },
+      "bandColor": {
+        "type": "varchar",
+        "suggestedFilter": "Search",
+        "isNullable": false
+      }
+    },
+    "relationships": []
+  },
+  "user": {
+    "columns": {
+      "userID": {
+        "type": "int",
+        "suggestedFilter": "Range",
+        "isNullable": false
+      },
+      "userName": {
+        "type": "varchar",
+        "suggestedFilter": "Search",
+        "isNullable": false
+      },
+      "userValet": {
+        "type": "int",
+        "suggestedFilter": "Range",
+        "isNullable": false
+      }
+    },
+    "relationships": []
+  },
+  "valet": {
+    "columns": {
+      "valetID": {
+        "type": "int",
+        "suggestedFilter": "Range",
+        "isNullable": false
+      },
+      "valetDate": {
+        "type": "int",
+        "suggestedFilter": "Range",
+        "isNullable": false
+      },
+      "valetUpdate": {
+        "type": "datetime",
+        "suggestedFilter": "Range",
+        "isNullable": false
+      }
+    },
+    "relationships": []
+  }
+}

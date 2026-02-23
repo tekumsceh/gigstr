@@ -1,0 +1,122 @@
+@import "tailwindcss";
+
+/* 1. MASTER VIEWPORT LOCK */
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* Prevents the whole page from bouncing/scrolling */
+  background-color: #020617; /* Slate-950 */
+  -webkit-font-smoothing: antialiased;
+  font-family: 'Inter', sans-serif;
+  color: #f8fafc;
+}
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+}
+header, nav, footer {
+  flex-shrink: 0; /* Prevents squishing */
+  box-shadow: 0 0 20px 2px rgb(59 103 227 / 14%);
+}
+
+/* 4. THE SCROLLABLE MAIN WINDOW */
+main {
+  flex-grow: 1; /* Fills remaining space */
+  padding: 0 2rem;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #1e293b transparent;
+}
+
+/* 5. FONT SIZE NORMALIZATION */
+/* Bumped up slightly so it isn't "too small" elsewhere */
+
+
+/* The specific high-contrast detail values */
+.detail-value {
+  font-size: 24px;
+  letter-spacing: -0.02em;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+/* 6. GLOBAL UI ELEMENTS */
+.page-wrapper {
+  width: 80%;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-evenly;
+  align-items: flex-start;
+}
+
+.type-bg { background: orange; }
+
+.status-dot {
+  position: relative;
+  top: 8px;
+  background: greenyellow;
+  margin-top: 9px;
+}
+
+/* 7. CUSTOM SCROLLBAR */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.1);
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* 8. SELECT BOX STYLING */
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-color: #1e293b;
+  color: #cbd5e1;
+  border: 1px solid #334155;
+  border-radius: 0.25rem;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0.5rem 2.5rem 0.5rem 1rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+  background-position: right 0.75rem center;
+  background-repeat: no-repeat;
+  background-size: 1.25em 1.25em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+select:focus {
+  outline: none;
+  border-color: #f97316;
+  box-shadow: 0 0 0 1px #f97316;
+}
+
+select option {
+  background-color: #0f172a;
+  color: #cbd5e1;
+}
+
+/* Remove arrows from Chrome, Safari, Edge, and Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Remove arrows from Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+}
