@@ -37,12 +37,12 @@ function AddDate() {
       try {
         const data = await fetchFromApi("check-conflict", { date: selectedDate });
         if (data.conflict) {
-          setConflictWarning(`Conflict: Event already booked at ${data.event.dateVenue} on this day.`);
+          setConflictWarning(`Conflict: Event booked at ${data.event.dateVenue}`);
         } else {
           setConflictWarning(null);
         }
       } catch (err) {
-        console.error("Failed to check conflicts");
+        console.error("Conflict check failed");
       }
     };
     checkDateConflict();
@@ -58,158 +58,170 @@ function AddDate() {
         setTimeout(() => navigate('/'), 2500);
       }
     } catch (err) {
-      alert("Submission failed. Check your network connection.");
+      alert("Submission failed.");
     }
   };
 
   return (
-  <div className="w-full">
-    {/* SUCCESS MODAL */}
-    {showModal && (
-      <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
-        <div className="bg-slate-900 border border-emerald-500/30 p-8 rounded-md shadow-2xl text-center max-w-sm w-full">
-          <h2 className="text-2xl font-black text-emerald-400 uppercase tracking-widest mb-2">Success</h2>
-          <p className="text-slate-400 text-sm mb-6">Event added to ledger.</p>
-        </div>
-      </div>
-    )}
-
-    {/* DYNAMIC PAGE TITLE */}
-    <h3 className="text-2xl font-black uppercase tracking-widest text-slate-200 mb-6 transition-all duration-300">
-      {currentBandID ? "Fill in the date details" : "Choose a band to add date for"}
-    </h3>
-
-    <form onSubmit={handleSubmit(onSubmit)} className="bg-slate-900/50 border border-slate-800 p-4 md:p-6 rounded-md shadow-xl flex flex-col gap-6">
-      
-      {/* --- STEP 1: IDENTITY SELECTION --- */}
-      <div>
-        <div className="flex flex-wrap gap-3 mb-2">
-          {bands
-            .filter(b => !currentBandID || parseInt(currentBandID) === b.bandID)
-            .map((b) => {
-              const isSelected = parseInt(currentBandID) === b.bandID;
-              return (
-                <button
-                  key={b.bandID}
-                  type="button"
-                  onClick={() => !currentBandID && setValue("bandID", b.bandID)}
-                  style={{ 
-                    borderColor: isSelected ? b.bandColor : 'transparent',
-                    backgroundColor: isSelected ? `${b.bandColor}20` : '#0f172a',
-                    cursor: isSelected ? 'default' : 'pointer'
-                  }}
-                  className={`
-                    group relative flex items-center gap-3 px-4 py-3 border-2 rounded-md transition-all duration-300
-                    ${isSelected ? 'shadow-[0_0_15px_-3px_rgba(0,0,0,0.2)]' : 'border-slate-800 hover:border-slate-700'}
-                  `}
-                >
-                  <span className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: b.bandColor }}></span>
-                  <span className={`text-xs font-black uppercase tracking-wider ${isSelected ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'}`}>
-                    {b.isSolo ? `👤 ${b.bandName}` : b.bandName}
-                  </span>
-                  
-                  {/* CHANGE identity button */}
-                  {isSelected && (
-                    <span 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setValue("bandID", "");
-                      }}
-                      className="ml-3 text-[9px] bg-slate-800 hover:bg-red-900/40 hover:text-red-400 text-slate-500 px-2 py-1 rounded-sm cursor-pointer transition-all uppercase font-black"
-                    >
-                      Change
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-        </div>
-        <input type="hidden" {...register("bandID", { required: true })} />
-        {errors.bandID && <p className="text-[9px] text-red-500 font-black uppercase mt-1">Please select an identity</p>}
-      </div>
-
-      {/* --- STEP 2: DETAILS (Visible only after selection) --- */}
-      {currentBandID && (
-        <div className="animate-in fade-in slide-in-from-top-4 duration-500 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-            <div>
-              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Date *</label>
-              <input 
-                {...register("dateDate", { required: true })} 
-                type="date" 
-                className={`w-full h-[46px] bg-slate-950 border ${errors.dateDate ? 'border-red-500' : 'border-slate-700'} text-white px-3 text-sm focus:outline-none focus:border-orange-500 transition-colors`} 
-              />
-              {conflictWarning && <div className="mt-2 text-[10px] font-black uppercase text-orange-500 bg-orange-500/10 border border-orange-500/30 p-2 rounded-sm">{conflictWarning}</div>}
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">City</label>
-                <input {...register("dateCity")} type="text" className="w-full h-[46px] bg-slate-950 border border-slate-700 text-white px-3 text-sm focus:outline-none focus:border-orange-500" />
-              </div>
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Venue</label>
-                <input {...register("dateVenue")} type="text" className="w-full h-[46px] bg-slate-950 border border-slate-700 text-white px-3 text-sm focus:outline-none focus:border-orange-500" />
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 items-end">
-            <div className="col-span-1 md:col-span-3">
-              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Price</label>
-              <input {...register("datePrice")} type="number" step="0.01" className="w-full h-[46px] bg-slate-950 border border-slate-700 text-white px-3 text-sm font-mono" />
-            </div>
-            <div className="col-span-1">
-              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Cur</label>
-              <select {...register("dateCurrency")} className="w-full h-[46px] bg-slate-950 border border-slate-700 text-white px-3 text-sm focus:outline-none">
-                <option value="EUR">EUR</option>
-                <option value="USD">USD</option>
-                <option value="GBP">GBP</option>
-                <option value="RSD">RSD</option>
-              </select>
-            </div>
-          </div>
-
-          <button 
-            type="button" 
-            onClick={() => setShowAdvanced(!showAdvanced)} 
-            className="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-orange-500 w-full text-center py-2 transition-colors"
-          >
-            {showAdvanced ? "- Basic View" : "+ Detailed View (Logistics & Contacts)"}
-          </button>
-
-          {showAdvanced && (
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
-              {["dateLoadin", "dateSoundcheck", "dateDoors", "dateStart", "dateCurfew"].map((timeField) => (
-                <div key={timeField}>
-                  <label className="block text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">
-                    {timeField.replace('date', '').replace('time', '')}
-                  </label>
-                  <input {...register(timeField)} type="time" className="w-full h-[40px] bg-slate-950 border border-slate-700 text-slate-300 px-2 text-xs" />
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div className="flex flex-col md:flex-row gap-4 pt-4 border-t border-slate-800">
-            <button 
-              type="submit" 
-              className="flex-[2] bg-orange-600 text-white py-4 rounded-sm text-[12px] font-black uppercase tracking-widest hover:bg-orange-500 transition-colors shadow-lg active:scale-[0.98]"
-            >
-              Add Event
-            </button>
-            <button 
-              type="button" 
-              onClick={() => navigate(-1)} 
-              className="flex-[1] bg-slate-800 text-slate-400 py-4 rounded-sm text-[12px] font-black uppercase tracking-widest hover:bg-slate-700 hover:text-white transition-all border border-slate-700"
-            >
-              Cancel
-            </button>
+    <div className="w-full">
+      {/* SUCCESS MODAL */}
+      {showModal && (
+        <div className="modal-overlay">
+          <div className="modal-content modal-success">
+            <h2 className="modal-title text-white">Success</h2>
+            <p className="modal-text text-slate-300">Event added to ledger.</p>
           </div>
         </div>
       )}
-    </form>
-  </div>
-);
+
+      <h3 className="text-[14px] font-black uppercase tracking-[0.4em] text-slate-400 mb-8 text-center">
+        {currentBandID ? "Date Details" : "Select Identity"}
+      </h3>
+
+      <form onSubmit={handleSubmit(onSubmit)} className="card p-8 flex flex-col gap-8">
+        
+{/* --- STEP 1: IDENTITY SELECTION (Button Style) --- */}
+<div className="flex flex-wrap justify-center gap-4">
+  {bands
+    .filter(b => !currentBandID || parseInt(currentBandID) === b.bandID)
+    .map((b) => {
+      const isSelected = parseInt(currentBandID) === b.bandID;
+      return (
+        <button
+          key={b.bandID}
+          type="button"
+          onClick={() => !currentBandID && setValue("bandID", b.bandID)}
+          style={{ 
+            /* We use a specific slate-800 hex for the border so it's visible */
+            borderColor: isSelected ? b.bandColor : '#1e293b', 
+            backgroundColor: isSelected ? `${b.bandColor}15` : '#0f172a',
+            boxShadow: isSelected ? `0 0 20px ${b.bandColor}30` : 'none'
+          }}
+          className={`
+            group flex items-center gap-4 px-8 py-4 border-2 rounded-2xl transition-all duration-200
+            ${isSelected 
+              ? 'cursor-default scale-105 shadow-xl' 
+              : 'hover:border-slate-500 hover:bg-slate-800/40 active:scale-95 cursor-pointer'
+            }
+          `}
+        >
+          {/* Glowing Indicator Dot */}
+          <div 
+            className={`w-3 h-3 rounded-full transition-shadow duration-300 ${isSelected ? 'animate-pulse' : ''}`} 
+            style={{ 
+              backgroundColor: b.bandColor,
+              boxShadow: isSelected ? `0 0 10px ${b.bandColor}` : 'none'
+            }}
+          ></div>
+
+          <span className={`text-[12px] font-black uppercase tracking-[0.2em] ${isSelected ? 'text-white' : 'text-slate-500 group-hover:text-slate-300'}`}>
+            {b.bandName}
+          </span>
+          
+          {isSelected && (
+            <span 
+              onClick={(e) => {
+                e.stopPropagation();
+                setValue("bandID", "");
+              }}
+              className="ml-4 text-[9px] bg-slate-800 hover:bg-red-500 hover:text-white text-slate-400 px-3 py-1 rounded-full transition-all uppercase font-black"
+            >
+              Change
+            </span>
+          )}
+        </button>
+      );
+    })}
+</div>
+        <input type="hidden" {...register("bandID", { required: true })} />
+        {errors.bandID && <p className="text-center text-red-500 text-[10px] font-black uppercase tracking-widest">Please select an identity</p>}
+
+        {/* --- STEP 2: FORM DETAILS --- */}
+        {currentBandID && (
+          <div className="animate-in fade-in slide-in-from-top-4 duration-500 space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Event Date</label>
+                <input 
+                  {...register("dateDate", { required: true })} 
+                  type="date" 
+                  className={`input-field w-full ${errors.dateDate ? 'border-red-500' : ''}`} 
+                />
+                {conflictWarning && (
+                  <div className="text-[10px] font-black uppercase text-orange-500 bg-orange-500/10 p-2 rounded">
+                    {conflictWarning}
+                  </div>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">City</label>
+                  <input {...register("dateCity")} type="text" className="input-field w-full" placeholder="e.g. London" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Venue</label>
+                  <input {...register("dateVenue")} type="text" className="input-field w-full" placeholder="e.g. O2 Arena" />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 items-end">
+              <div className="col-span-1 md:col-span-3 space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Guarantee / Price</label>
+                <input {...register("datePrice")} type="number" step="0.01" className="input-field w-full font-mono" placeholder="0.00" />
+              </div>
+              <div className="col-span-1 space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Currency</label>
+                <select {...register("dateCurrency")} className="input-field w-full cursor-pointer">
+                  <option value="EUR">EUR</option>
+                  <option value="USD">USD</option>
+                  <option value="GBP">GBP</option>
+                  <option value="RSD">RSD</option>
+                </select>
+              </div>
+            </div>
+
+            <button 
+              type="button" 
+              onClick={() => setShowAdvanced(!showAdvanced)} 
+              className="w-full py-2 border-y border-slate-800 text-[9px] font-black uppercase tracking-[0.3em] text-slate-600 hover:text-white transition-colors"
+            >
+              {showAdvanced ? "Hide Logistics" : "Show Logistics (Times & Notes)"}
+            </button>
+
+            {showAdvanced && (
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                {["dateLoadin", "dateSoundcheck", "dateDoors", "dateStart", "dateCurfew"].map((timeField) => (
+                  <div key={timeField} className="space-y-2">
+                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-500 block text-center">
+                      {timeField.replace('date', '')}
+                    </label>
+                    <input {...register(timeField)} type="time" className="input-field w-full text-center" />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex flex-col md:flex-row gap-4 pt-4">
+              <button 
+                type="submit" 
+                className="btn btn-primary flex-grow py-4 text-[11px] uppercase tracking-[0.2em]"
+              >
+                Add this event to your calendar
+              </button>
+              <button 
+                type="button" 
+                onClick={() => navigate(-1)} 
+                className="btn bg-slate-800 hover:bg-slate-700 text-slate-300 py-4 text-[11px] uppercase tracking-[0.2em] px-8"
+              >
+                Back
+              </button>
+            </div>
+          </div>
+        )}
+      </form>
+    </div>
+  );
 }
 
 export default AddDate;

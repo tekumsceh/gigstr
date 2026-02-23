@@ -23,8 +23,8 @@ All confirmations, edits, and alerts must use the custom modal wrapper:
 * `.modal-footer`: For right-aligned `.gig-btn` actions.
 
 ## 4. Rollout & Cleanup Roadmap
-- [ ] Phase 1: Lock in `index.css` with `@layer` definitions.
-- [ ] Phase 2: Create reusable React component for `Modal`.
+- [x] Phase 1: Lock in `index.css` with `@layer` definitions.
+- [x] Phase 2: Create reusable React component for `Modal`.
 - [ ] Phase 3: Create reusable React component for `Button` & `Input`.
 - [ ] Phase 4: Refactor `HomeView.jsx` to use new global classes.
 - [ ] Phase 5: Refactor `Listings.jsx` to use `.standard-card` and new Modal.

@@ -1,13 +1,13 @@
+// views/AddDateView.jsx
 import React from 'react';
 import AddDate from '../components/AddDate';
+import SingleColumnLayout from '../components/layouts/SingleColumnLayout';
 
 function AddDateView() {
   return (
-    <div className="w-[90%] max-w-[1400px] mx-auto py-12">
-      <div className="max-w-4xl mx-auto">
-        <AddDate />
-      </div>
-    </div>
+    <SingleColumnLayout maxWidth="max-w-4xl">
+      <AddDate />
+    </SingleColumnLayout>
   );
 }
 

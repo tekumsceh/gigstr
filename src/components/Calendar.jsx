@@ -15,29 +15,48 @@ function Calendar({ title = "Schedule", gigs = [], onSelectDate }) {
     return map;
   }, [gigs]);
 
-  const startCol = new Date(year, month, 1).getDay() || 7;
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  
+  const allDays = useMemo(() => {
+    const days = [];
+    const firstDayOfMonth = new Date(year, month, 1).getDay();
+    const prefixDays = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1;
+    const prevMonthLastDay = new Date(year, month, 0).getDate();
+    
+    for (let i = prefixDays - 1; i >= 0; i--) {
+      days.push({ day: prevMonthLastDay - i, month: month - 1, year, isCurrentMonth: false });
+    }
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    for (let i = 1; i <= daysInMonth; i++) {
+      days.push({ day: i, month, year, isCurrentMonth: true });
+    }
+    const remainingSlots = 42 - days.length;
+    for (let i = 1; i <= remainingSlots; i++) {
+      days.push({ day: i, month: month + 1, year, isCurrentMonth: false });
+    }
+    return days;
+  }, [year, month]);
+
   const now = new Date();
-  const todayObj = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const todayObj = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
   const changeMonth = (newMonth) => setViewDate(new Date(year, newMonth, 1));
   const changeYear = (newYear) => setViewDate(new Date(newYear, month, 1));
 
   return (
-    <div className="w-full max-w-sm p-6 bg-slate-900 rounded-3xl border border-slate-800 shadow-2xl font-sans">
+    <div className="card w-full p-6 bg-slate-900/40 border border-slate-800 shadow-2xl">
       <div className="flex flex-col gap-4 mb-6">
-        <h3 className="text-white font-black uppercase tracking-tight text-lg pl-1">{title}</h3>
+        <h3 className="text-[12px] font-black uppercase tracking-[0.4em] text-slate-400">
+          {title}
+        </h3>
         
-        <div className="flex justify-between items-center bg-slate-800/50 p-1.5 rounded-xl border border-slate-700/50">
+        <div className="flex justify-between items-center bg-slate-950/80 p-1 rounded-lg border border-slate-800/50">
           <select 
             value={month} 
             onChange={(e) => changeMonth(parseInt(e.target.value))}
-            className="bg-transparent text-slate-200 font-bold text-xs uppercase outline-none cursor-pointer px-2 py-1"
+            className="bg-transparent text-slate-200 font-bold text-[10px] uppercase outline-none cursor-pointer px-2 py-1"
           >
             {Array.from({ length: 12 }, (_, i) => (
-              <option key={`month-${i}`} value={i} className="bg-slate-800 text-slate-200">
+              <option key={i} value={i} className="bg-slate-900 text-slate-200">
                 {new Date(0, i).toLocaleString('en-GB', { month: 'long' })}
               </option>
             ))}
@@ -46,75 +65,82 @@ function Calendar({ title = "Schedule", gigs = [], onSelectDate }) {
           <select 
             value={year} 
             onChange={(e) => changeYear(parseInt(e.target.value))}
-            className="bg-transparent text-slate-400 font-bold text-xs outline-none cursor-pointer px-2 py-1"
+            className="bg-transparent text-slate-400 font-bold text-[10px] outline-none cursor-pointer px-2 py-1"
           >
             {[2024, 2025, 2026, 2027].map(y => (
-              <option key={`year-${y}`} value={y} className="bg-slate-800 text-slate-200">{y}</option>
+              <option key={y} value={y} className="bg-slate-900 text-slate-200">{y}</option>
             ))}
           </select>
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-1.5">
-        {/* FIX 1: Unique keys for Day Labels */}
+      <div className="grid grid-cols-7 gap-px bg-slate-800 border border-slate-800 overflow-hidden rounded-md shadow-inner">
         {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map((l, i) => (
-          <b key={`label-${i}`} className="text-center text-[9px] font-black text-white/90 uppercase tracking-widest mb-2">{l}</b>
+          <div key={i} className="bg-slate-900/90 py-3 border-b border-slate-800">
+            <b className="block text-center text-[9px] font-black text-slate-100 uppercase tracking-[0.2em]">
+              {l}
+            </b>
+          </div>
         ))}
         
-        {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(d => {
-          const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-          const currentIterationDate = new Date(year, month, d);
-          const gig = gigMap[dateStr];
-          const isToday = dateStr === todayStr;
-          const isPast = currentIterationDate < todayObj;
-
-          let bgColor = 'rgba(51, 65, 85, 0.4)'; 
-          let textColor = '#f8fafc'; 
-          let opacity = '1';
-
-          if (isToday) {
-            bgColor = '#1d4ed8'; 
-            textColor = '#ffffff';
-          } 
+        {allDays.map((item, idx) => {
+          const d = new Date(item.year, item.month, item.day);
+          const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
           
+          const gig = item.isCurrentMonth ? gigMap[dateStr] : null;
+          const isToday = dateStr === todayStr;
+          const isPast = d < todayObj;
+
+          // 1. Text Whiteness Logic
+          // Active month: Bright (90%), Ghost days: Muted (30%)
+          let textColor = item.isCurrentMonth ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.3)';
+          
+          // 2. Cell Background Logic
+          let cellBg = item.isCurrentMonth ? 'rgba(15, 23, 42, 0.9)' : 'rgba(15, 23, 42, 0.4)';
+
           if (gig) {
-            bgColor = gig.bandColor || '#fb923c'; 
+            cellBg = gig.bandColor || '#fb923c';
             textColor = '#ffffff';
-            if (isPast && !isToday) opacity = '0.4';
           }
 
           return (
             <button
-              /* FIX 2: Specific date string as key for the grid */
-              key={`day-${dateStr}`}
+              key={idx}
               onClick={() => gig && onSelectDate ? onSelectDate(gig) : null}
-              style={{ 
-                gridColumnStart: d === 1 ? startCol : 'auto',
-                backgroundColor: bgColor, 
-                color: textColor,
-                opacity: opacity
-              }}
               className={`
-                aspect-square flex flex-col items-center justify-center rounded-lg text-xs font-bold transition-all relative
-                ${gig ? 'cursor-pointer hover:opacity-100 hover:scale-105 shadow-md ring-1 ring-white/10' : 'cursor-default'}
-                ${!gig && !isToday ? 'hover:bg-slate-700/60' : ''}
+                aspect-square flex flex-col items-center justify-center text-[11px] font-black transition-all relative group
+                ${gig ? 'cursor-pointer' : 'cursor-default'}
               `}
+              style={{ 
+                backgroundColor: cellBg, 
+                color: textColor,
+                outline: isToday ? '2px solid #ffffff' : 'none',
+                outlineOffset: '-2px',
+                opacity: (isPast && gig && !isToday) ? 0.5 : 1,
+                zIndex: isToday ? 10 : 1
+              }}
             >
-              {d}
-              {gig && !isPast && <span className="absolute bottom-1 w-1 h-1 bg-white/60 rounded-full"></span>}
+              {/* Hover Overlay Layer */}
+              <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+              
+              <span className="relative z-10">{item.day}</span>
+              
+              {/* Optional: subtle dot for gigs on Today so it's extra clear */}
+              {gig && isToday && (
+                <span className="absolute bottom-1 w-1 h-1 bg-white rounded-full"></span>
+              )}
             </button>
           );
         })}
       </div>
 
-      <div className="mt-6 pt-4 border-t border-slate-800 flex flex-wrap gap-3">
+      <div className="mt-6 flex flex-wrap gap-x-4 gap-y-2">
         {Array.from(new Set(gigs.map(g => g.bandName))).map((typeValue, idx) => {
           const color = gigs.find(g => g.bandName === typeValue)?.bandColor;
           return (
-            /* FIX 3: Combine name and index for the legend key */
-            <div key={`legend-${typeValue}-${idx}`} className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full shadow-[0_0_5px_rgba(255,255,255,0.1)]" style={{ backgroundColor: color }} />
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{typeValue}</span>
+            <div key={idx} className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
+              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{typeValue}</span>
             </div>
           );
         })}
