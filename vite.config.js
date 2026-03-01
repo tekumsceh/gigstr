@@ -9,6 +9,7 @@ export default defineConfig({
     tailwindcss()
   ],
   server: {
+    host: true, // Listen on all interfaces (0.0.0.0) so you can access from phone on same WiFi
     proxy: {
       // Proxying API requests
       '/api': {

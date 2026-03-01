@@ -19,7 +19,7 @@ const Avatar = () => {
   };
 
   const handleLogout = () => {
-    window.location.href = 'http://localhost:5000/auth/logout';
+    window.location.href = '/auth/logout';
   };
 
   return (

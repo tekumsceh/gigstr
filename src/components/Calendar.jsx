@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 
-function Calendar({ title = "Schedule", gigs = [], onSelectDate }) {
+function Calendar({ gigs = [], onSelectDate }) {
   const [viewDate, setViewDate] = useState(new Date());
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
@@ -10,7 +10,10 @@ function Calendar({ title = "Schedule", gigs = [], onSelectDate }) {
     gigs.forEach(gig => {
       const d = new Date(gig.dateDate);
       const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      map[dateKey] = gig;
+      if (!map[dateKey]) {
+        map[dateKey] = [];
+      }
+      map[dateKey].push(gig);
     });
     return map;
   }, [gigs]);
@@ -43,12 +46,8 @@ function Calendar({ title = "Schedule", gigs = [], onSelectDate }) {
   const changeYear = (newYear) => setViewDate(new Date(newYear, month, 1));
 
   return (
-    <div className="card w-full p-6 bg-slate-900/40 border border-slate-800 shadow-2xl">
-      <div className="flex flex-col gap-4 mb-6">
-        <h3 className="text-[12px] font-black uppercase tracking-[0.4em] text-slate-400">
-          {title}
-        </h3>
-        
+    <div className="w-full bg-slate-900/40 shadow-2xl rounded-xl">
+      <div className="flex flex-col gap-2 mb-2 px-2 pt-2">        
         <div className="flex justify-between items-center bg-slate-950/80 p-1 rounded-lg border border-slate-800/50">
           <select 
             value={month} 
@@ -87,63 +86,77 @@ function Calendar({ title = "Schedule", gigs = [], onSelectDate }) {
           const d = new Date(item.year, item.month, item.day);
           const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
           
-          const gig = item.isCurrentMonth ? gigMap[dateStr] : null;
+          const dayGigs = item.isCurrentMonth ? (gigMap[dateStr] || []) : [];
+          const hasGigs = dayGigs.length > 0;
           const isToday = dateStr === todayStr;
           const isPast = d < todayObj;
 
-          // 1. Text Whiteness Logic
-          // Active month: Bright (90%), Ghost days: Muted (30%)
-          let textColor = item.isCurrentMonth ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.3)';
-          
-          // 2. Cell Background Logic
-          let cellBg = item.isCurrentMonth ? 'rgba(15, 23, 42, 0.9)' : 'rgba(15, 23, 42, 0.4)';
+          // Default styles for an empty day
+          let cellStyle = {
+            backgroundColor: item.isCurrentMonth ? 'rgba(15, 23, 42, 0.9)' : 'rgba(15, 23, 42, 0.4)',
+            color: item.isCurrentMonth ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.3)',
+            outline: isToday ? '2px solid #ffffff' : 'none',
+            outlineOffset: '-2px',
+            opacity: (isPast && hasGigs && !isToday) ? 0.5 : 1,
+            zIndex: isToday ? 10 : 1
+          };
 
-          if (gig) {
-            cellBg = gig.bandColor || '#fb923c';
-            textColor = '#ffffff';
+          // Update styles if gigs exist
+          if (hasGigs) {
+            cellStyle.color = '#ffffff';
+            
+            if (dayGigs.length === 1) {
+              // Single event: solid color
+              cellStyle.backgroundColor = dayGigs[0].bandColor || '#fb923c';
+            } else {
+              // Multiple events: create a diagonal stripe pattern
+              // This maps through the gigs and creates a CSS linear-gradient
+              const gradientStops = dayGigs.map((gig, index) => {
+                const percentage = (100 / dayGigs.length) * (index + 1);
+                const prevPercentage = (100 / dayGigs.length) * index;
+                const color = gig.bandColor || '#fb923c';
+                return `${color} ${prevPercentage}%, ${color} ${percentage}%`;
+              }).join(', ');
+              
+              cellStyle.background = `linear-gradient(135deg, ${gradientStops})`;
+              cellStyle.backgroundColor = 'transparent'; // Override default bg
+            }
           }
 
           return (
-            <button
-              key={idx}
-              onClick={() => gig && onSelectDate ? onSelectDate(gig) : null}
-              className={`
-                aspect-square flex flex-col items-center justify-center text-[11px] font-black transition-all relative group
-                ${gig ? 'cursor-pointer' : 'cursor-default'}
-              `}
-              style={{ 
-                backgroundColor: cellBg, 
-                color: textColor,
-                outline: isToday ? '2px solid #ffffff' : 'none',
-                outlineOffset: '-2px',
-                opacity: (isPast && gig && !isToday) ? 0.5 : 1,
-                zIndex: isToday ? 10 : 1
-              }}
-            >
-              {/* Hover Overlay Layer */}
-              <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-              
-              <span className="relative z-10">{item.day}</span>
-              
-              {/* Optional: subtle dot for gigs on Today so it's extra clear */}
-              {gig && isToday && (
-                <span className="absolute bottom-1 w-1 h-1 bg-white rounded-full"></span>
-              )}
-            </button>
-          );
-        })}
-      </div>
+    <button
+      key={idx}
+      draggable={item.isCurrentMonth} // Only allow dragging days from the current month
+      onDragStart={(e) => {
+        e.dataTransfer.setData("text/plain", dateStr);
+        e.dataTransfer.effectAllowed = "copy";
+        e.currentTarget.style.opacity = '0.5';
+      }}
+      onDragEnd={(e) => {
+        e.currentTarget.style.opacity = '1';
+      }}
+      onClick={() => onSelectDate && onSelectDate(dayGigs, d)}
+      className="aspect-square flex flex-col items-center justify-center text-[11px] font-black transition-all relative group cursor-grab active:cursor-grabbing"
+      style={cellStyle}
+    >
+      <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+      
+      <span className="relative z-10 drop-shadow-md">{item.day}</span>
+      
+      {/* Visual cues for gigs */}
+      {dayGigs.length > 1 && (
+        <div className="absolute top-1 right-1 flex gap-0.5">
+            <div className="w-1 h-1 bg-white rounded-full animate-pulse shadow-sm" />
+            <div className="w-1 h-1 bg-white/50 rounded-full shadow-sm" />
+        </div>
+      )}
 
-      <div className="mt-6 flex flex-wrap gap-x-4 gap-y-2">
-        {Array.from(new Set(gigs.map(g => g.bandName))).map((typeValue, idx) => {
-          const color = gigs.find(g => g.bandName === typeValue)?.bandColor;
-          return (
-            <div key={idx} className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
-              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{typeValue}</span>
-            </div>
-          );
-        })}
+      {hasGigs && isToday && (
+        <span className="absolute bottom-1 w-1 h-1 bg-white rounded-full shadow-sm"></span>
+      )}
+    </button>
+  );
+})}
       </div>
     </div>
   );

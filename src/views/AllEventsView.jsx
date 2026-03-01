@@ -10,7 +10,7 @@ function AllEventsView() {
     setLoading(true);
     try {
       // We use POST now to send the filter object easily in the body
-      const response = await fetch(`http://localhost:5000/api/query/dates`, {
+      const response = await fetch(`/api/query/dates`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ filters })

@@ -5,12 +5,12 @@ const session = require('express-session');
 const passport = require('passport');
 const authRoutes = require('./routes/authRoutes');
 const eventRoutes = require('./routes/eventRoutes');
-const bandRoutes = require('./routes/bandRoutes'); // Import band routes
+const bandRoutes = require('./routes/bandRoutes');
+const venueRoutes = require('./routes/venueRoutes');
 const express = require('express');
 const mysql = require('mysql2/promise'); 
 const cors = require('cors');
 const cron = require('node-cron');
-const inventory = require('./db_inventory.json');
 const app = express();
 const PORT = process.env.PORT || 5000;
 const db = require('./config/db');
@@ -20,7 +20,7 @@ const sessionStore = new MySQLStore({}, db);
 
 // --- 1. MIDDLEWARE ---
 app.use(cors({
-    origin: process.env.CLIENT_URL, 
+    origin: process.env.CLIENT_URL || (process.env.NODE_ENV !== 'production' ? true : undefined),
     credentials: true 
 }));
 
@@ -40,7 +40,8 @@ app.use(passport.session());
 app.use(express.json());
 app.use('/', authRoutes);
 app.use('/', eventRoutes);
-app.use('/', bandRoutes); // Use band routes
+app.use('/', bandRoutes);
+app.use('/', venueRoutes);
 
 const isGod = (req, res, next) => {
     if (!req.isAuthenticated()) return res.status(401).json({ error: "Unauthorized: Please log in." });
@@ -78,11 +79,13 @@ app.get("/api/valet-master-package", async (req, res) => {
     try {
         const today = new Date().toISOString().split('T')[0];
         const gigsSql = `
-            SELECT d.dateID, d.dateVenue, d.dateCity, DATE_FORMAT(d.dateDate, '%Y-%m-%d') as dateDate, 
+            SELECT d.dateID, v.venueName as dateVenue, v.venueCity as dateCity, v.venueCountry as dateCountry,
+            DATE_FORMAT(d.dateDate, '%Y-%m-%d') as dateDate, 
             d.datePrice, d.bandID, t.bandName, 
             COALESCE(SUM(p.amountEur), 0) AS totalPaid,
             (d.datePrice - COALESCE(SUM(p.amountEur), 0)) AS remainingBalance
             FROM dates d
+            LEFT JOIN venues v ON d.venueID = v.venueID
             LEFT JOIN type t ON d.bandID = t.typeID
             LEFT JOIN payments p ON d.dateID = p.dateID
             WHERE d.dateDate <= ?
@@ -134,4 +137,7 @@ app.get('/api/rates', async (req, res) => {
 
 app.get("/", (req, res) => res.send("Gigstr Backend Live"));
 
-app.listen(PORT, () => console.log(`Server live at http://127.0.0.1:${PORT}`));
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server live at http://127.0.0.1:${PORT}`);
+  console.log(`Network: http://<your-ip>:${PORT} (for API proxy via Vite)`);
+});

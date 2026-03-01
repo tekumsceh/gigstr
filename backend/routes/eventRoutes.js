@@ -1,6 +1,13 @@
 const express = require('express');
 const router = express.Router();
+const isAuthenticated = (req, res, next) => {
+    if (req.isAuthenticated()) {
+        return next();
+    }
+    res.status(401).json({ error: "You must be logged in to perform this action." });
+};
 const db = require('../config/db');
+const { findOrCreateVenue } = require('../utils/venueUtil');
 
 // --- CUSTOM SECURITY MIDDLEWARE ---
 const isGod = (req, res, next) => {
@@ -15,11 +22,13 @@ router.get("/api/dates", async (req, res) => {
         let sql = `
             SELECT 
                 t1.*, 
+                v.venueName as dateVenue, v.venueCity as dateCity, v.venueCountry as dateCountry,
                 DATE_FORMAT(t1.dateDate, '%Y-%m-%d') as dateDate, 
                 b.bandName, b.bandColor, 
                 t3.statusName, t3.statusColor,
                 COALESCE(SUM(p.amountEUR), 0) AS datePaidAmount
             FROM dates t1
+            LEFT JOIN venues v ON t1.venueID = v.venueID
             LEFT JOIN bands b ON t1.bandID = b.bandID
             LEFT JOIN status t3 ON t1.dateStatus = t3.statusID
             LEFT JOIN payments p ON t1.dateID = p.dateID
@@ -55,10 +64,19 @@ router.get("/api/dates", async (req, res) => {
 });
 
 router.get("/api/check-conflict", async (req, res) => {
-    const { date, venue } = req.query;
+    const { date, venue, city, country } = req.query;
     try {
-        const sql = "SELECT * FROM dates WHERE dateDate = ? AND dateVenue = ?";
-        const [results] = await db.query(sql, [date, venue]);
+        if (!date || !venue) {
+            return res.json({ conflict: false });
+        }
+        const [venueRows] = await db.query(
+            'SELECT venueID FROM venues WHERE venueName = ? AND venueCity = ? AND venueCountry = ?',
+            [venue || 'Unknown', city || 'Unknown', country || '']
+        );
+        if (venueRows.length === 0) return res.json({ conflict: false });
+        const venueID = venueRows[0].venueID;
+        const sql = "SELECT d.*, v.venueName as dateVenue, v.venueCity as dateCity, v.venueCountry as dateCountry FROM dates d LEFT JOIN venues v ON d.venueID = v.venueID WHERE d.dateDate = ? AND d.venueID = ?";
+        const [results] = await db.query(sql, [date, venueID]);
         if (results.length > 0) {
             return res.json({ conflict: true, event: results[0] });
         }
@@ -68,28 +86,63 @@ router.get("/api/check-conflict", async (req, res) => {
     }
 });
 
-router.post("/api/add-date", isGod, async (req, res) => {
+// 1. Change 'isGod' to 'isAuthenticated' (or your standard login check)
+router.post("/api/add-date", isAuthenticated, async (req, res) => {
     const d = req.body;
-    const dateOwner = req.user.id; 
+    const dateOwner = req.user.userID; // Ensure this matches your passport user object (userID vs id)
+    
     try {
+        // --- AUTHENTICATION CHECK ---
+        const [membership] = await db.query(
+            "SELECT role FROM band_members WHERE bandID = ? AND userID = ?",
+            [d.bandID, dateOwner]
+        );
+
+        if (membership.length === 0) {
+            return res.status(403).json({ 
+                error: "Forbidden: You are not a member of this band." 
+            });
+        }
+        // ----------------------------
+
+        const venueID = await findOrCreateVenue(
+            d.dateVenue,
+            d.dateCity,
+            d.dateCountry,
+            d.dateVenueAddress || null
+        );
+
         const sql = `
             INSERT INTO dates 
-            (dateDate, bandID, dateCity, dateVenue, dateCountry, datePrice, 
+            (dateDate, bandID, venueID, datePrice, 
              dateCurrency, dateStart, dateLoadin, dateSoundcheck, dateDoors, 
              dateCurfew, dateCategory, dateDescription, dateStatus, dateOwner) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
+        
         const values = [
-            d.dateDate, d.bandID, d.dateCity, d.dateVenue, d.dateCountry || null,
-            d.datePrice || 0, d.dateCurrency, d.dateStart || null, d.dateLoadin || null,
-            d.dateSoundcheck || null, d.dateDoors || null, d.dateCurfew || null,
-            d.dateCategory || null, d.dateDescription || null, d.dateStatus, dateOwner
+            d.dateDate, 
+            d.bandID, 
+            venueID,
+            d.datePrice || 0, 
+            d.dateCurrency, 
+            d.dateStart || null, 
+            d.dateLoadin || null,
+            d.dateSoundcheck || null, 
+            d.dateDoors || null, 
+            d.dateCurfew || null,
+            d.dateCategory || null, 
+            d.dateDescription || null, 
+            d.dateStatus || 1,
+            dateOwner
         ];
+
         const [result] = await db.query(sql, values);
         res.json({ success: true, insertId: result.insertId });
+
     } catch (err) {
         console.error("Add Error:", err);
-        res.status(500).json({ error: "Failed to add event" });
+        res.status(500).json({ error: "Failed to add event. Check if the band is valid." });
     }
 });
 
@@ -103,11 +156,13 @@ router.get("/api/calendar-dates", async (req, res) => {
             SELECT 
                 t1.dateID, 
                 DATE_FORMAT(t1.dateDate, '%Y-%m-%d') as dateDate, 
-                t1.dateVenue, t1.dateCity, t1.datePrice, t1.dateDescription,
+                v.venueName as dateVenue, v.venueCity as dateCity, v.venueCountry as dateCountry,
+                t1.datePrice, t1.dateDescription,
                 b.bandName, b.bandColor, 
                 s.statusName, s.statusColor,
                 (SELECT COALESCE(SUM(amountEUR), 0) FROM payments WHERE dateID = t1.dateID) AS datePaidAmount
             FROM dates t1
+            LEFT JOIN venues v ON t1.venueID = v.venueID
             LEFT JOIN bands b ON t1.bandID = b.bandID
             LEFT JOIN status s ON t1.dateStatus = s.statusID
             LEFT JOIN band_members bm ON t1.bandID = bm.bandID
@@ -129,18 +184,23 @@ router.post("/api/update-date/:id", isGod, async (req, res) => {
   const { id } = req.params;
   const d = req.body;
   try {
+      const venueID = await findOrCreateVenue(
+        d.dateVenue,
+        d.dateCity,
+        d.dateCountry,
+        d.dateVenueAddress || null
+      );
+
       const sql = `
         UPDATE dates SET 
-          dateDate = ?, bandID = ?, dateCity = ?, dateVenue = ?, 
-          dateCountry = ?, datePrice = ?, dateCurrency = ?, dateStart = ?, 
+          dateDate = ?, bandID = ?, venueID = ?, datePrice = ?, dateCurrency = ?, dateStart = ?, 
           dateLoadin = ?, dateSoundcheck = ?, dateDoors = ?, dateCurfew = ?,
           dateCategory = ?, dateContactOrganizer = ?, dateContactTech = ?,
           dateDescription = ?, dateStatus = ?
         WHERE dateID = ?
       `;
       const values = [
-        d.dateDate, d.bandID, d.dateCity, d.dateVenue, 
-        d.dateCountry || null, d.datePrice, d.dateCurrency, d.dateStart || null, 
+        d.dateDate, d.bandID, venueID, d.datePrice, d.dateCurrency, d.dateStart || null, 
         d.dateLoadin || null, d.dateSoundcheck || null, d.dateDoors || null, d.dateCurfew || null,
         d.dateCategory || null, d.dateContactOrganizer || null, d.dateContactTech || null,
         d.dateDescription || null, d.dateStatus, id
@@ -172,10 +232,12 @@ router.get("/api/date/:id", async (req, res) => {
   const { id } = req.params;
   try {
     const sql = `
-      SELECT t1.*, DATE_FORMAT(t1.dateDate, '%Y-%m-%d') as dateDate, 
+      SELECT t1.*, v.venueName as dateVenue, v.venueCity as dateCity, v.venueCountry as dateCountry,
+      DATE_FORMAT(t1.dateDate, '%Y-%m-%d') as dateDate, 
       b.bandName, b.bandColor, t3.statusName, t3.statusColor,
       (SELECT COALESCE(SUM(p.amountEUR), 0) FROM payments p WHERE p.dateID = t1.dateID) AS datePaidAmount
       FROM dates t1
+      LEFT JOIN venues v ON t1.venueID = v.venueID
       LEFT JOIN bands b ON t1.bandID = b.bandID
       LEFT JOIN status t3 ON t1.dateStatus = t3.statusID
       WHERE t1.dateID = ?

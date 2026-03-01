@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import Listings from '../components/Listings';
+import Modal from '../components/Modal';
 import PageWrapper from '../components/layouts/PageWrapper';
 import PageBanner from '../components/layouts/PageBanner';
 import TwoColumnLayout from '../components/layouts/TwoColumnLayout';
@@ -13,8 +14,10 @@ const ValetView = () => {
   const [eurToRsd] = useState(117.2);
   
   const [bulkAmount, setBulkAmount] = useState('');
-  const [viewMode, setViewMode] = useState('list'); // Placeholder for your grid/list toggle
+  const [viewMode, setViewMode] = useState('list');
   const [showLimit, setShowLimit] = useState(20);
+  const [payModalItem, setPayModalItem] = useState(null);
+  const [payModalLoading, setPayModalLoading] = useState(false);
 
   // Initialize master filters
   const [activeFilters, setActiveFilters] = useState({
@@ -69,14 +72,16 @@ const ValetView = () => {
       return matchesYear && matchesType && isUnpaid && isPast;
     }).map(gig => {
       const balance = gig.datePrice - (gig.datePaidAmount || 0);
-      const displayBalance = currencyView === 'RSD' 
-        ? `${Math.round(balance * eurToRsd).toLocaleString()} RSD` 
-        : `${balance.toFixed(2)} ${gig.dateCurrency || 'EUR'}`;
+      const isWhole = Number.isInteger(balance) || Math.abs(balance % 1) < 0.001;
+      const numStr = isWhole ? String(Math.round(balance)) : balance.toFixed(2);
+      const displayBalance = currencyView === 'RSD'
+        ? `${Math.round(balance * eurToRsd).toLocaleString()} RSD`
+        : `${numStr} €`;
 
-      return { 
-        ...gig, 
-        remainingBalance: displayBalance, 
-        id: gig.dateID || gig.id, 
+      return {
+        ...gig,
+        remainingBalance: displayBalance,
+        id: gig.dateID || gig.id,
         rawBalance: balance,
         dateDescription: gig.bandName === 'Trosak' ? gig.dateDescription : ''
       };
@@ -86,6 +91,20 @@ const ValetView = () => {
   const totalBalance = useMemo(() => 
     processedData.reduce((acc, curr) => acc + curr.rawBalance, 0)
   , [processedData]);
+
+  const handlePaySingleConfirm = async () => {
+    if (!payModalItem) return;
+    setPayModalLoading(true);
+    try {
+      await axios.post(`/api/dates/pay-single/${payModalItem.dateID || payModalItem.id}`);
+      loadValetData();
+      setPayModalItem(null);
+    } catch (err) {
+      alert('Payment failed. Please try again.');
+    } finally {
+      setPayModalLoading(false);
+    }
+  };
 
   const handleWaterfall = async () => {
     const strictRegex = /^\d+(\.\d{1,2})?$/;
@@ -136,7 +155,6 @@ const ValetView = () => {
     <PageWrapper>
       <PageBanner 
         title="Valet"
-        subtitle="Manage and settle outstanding balances"
         value={totalBalance}
         currency={currencyView}
         onCurrencyChange={setCurrencyView}
@@ -149,20 +167,9 @@ const ValetView = () => {
                 
                 {/* 1. THE TITLE - Our custom high-contrast header */}
                   <div className="px-6 py-4 bg-slate-900/40 border-b border-slate-800 flex justify-between items-center">
-                    <div className="flex items-baseline gap-3">
-                      <h2 className="text-[15px] font-black uppercase tracking-[0.3em] text-white leading-none">
-                        Outstanding <span className="text-orange-500">({processedData.length})</span>
-                      </h2>
-                      
-                      {/* The Live Balance "Badge" */}
-                      <div className="flex items-center gap-2 px-2 py-0.5 bg-orange-500/10 border border-orange-500/20 rounded">
-                        <span className="text-[11px] font-black text-orange-500 tabular-nums">
-                          {currencyView === 'RSD' 
-                            ? `${Math.round(totalBalance * eurToRsd).toLocaleString()} RSD` 
-                            : `${totalBalance.toFixed(2)} EUR`}
-                        </span>
-                      </div>
-                    </div>
+                    <h2 className="text-[15px] font-black uppercase tracking-[0.3em] text-white leading-none">
+                      Outstanding <span className="text-orange-500">({processedData.length})</span>
+                    </h2>
                   </div>
 
                 {/* 2. THE FILTER - The "Toolbar" clamped to the table */}
@@ -176,27 +183,29 @@ const ValetView = () => {
                   onViewChange={setViewMode}
                 />
 
-                {/* 3. THE LISTINGS - Stripped of internal title padding */}
+                {/* 3. THE LISTINGS */}
                 <Listings 
                   title="" 
                   fields={valetFields}
                   manualData={processedData}
                   loading={loading}
                   isValetMode={true}
-                  // Pass a flag to remove the internal title section
-                  hideHeader={true} 
-                  renderActions={(item) => (
+                  hideHeader={true}
+                  viewMode={viewMode}
+                  onValetItemClick={(item) => setPayModalItem(item)}
+                  currencyView={currencyView}
+                  eurToRsd={eurToRsd}
+                  renderActions={viewMode === 'list' ? (item) => (
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
-                        const amt = prompt("Enter amount to pay:", item.rawBalance);
-                        if (amt) axios.post(`/api/dates/pay-single/${item.id}`, { amount: amt }).then(loadValetData);
+                        setPayModalItem(item);
                       }}
                       className="px-4 py-1.5 border border-orange-500/50 text-orange-500 text-[10px] font-black uppercase hover:bg-orange-500 hover:text-white transition-all rounded"
                     >
-                     Pay
+                      Pay
                     </button>
-                  )}
+                  ) : undefined}
                 />
               </div>
             }
@@ -233,6 +242,37 @@ const ValetView = () => {
           </div>
         }
       />
+
+      <Modal
+        isOpen={!!payModalItem}
+        onClose={() => !payModalLoading && setPayModalItem(null)}
+        title="Pay this date?"
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-slate-200 text-sm leading-relaxed">
+            {payModalItem && (
+              <>Pay the full remaining balance for this date?</>
+            )}
+          </p>
+          <div className="flex gap-3 justify-end pt-2">
+            <button
+              type="button"
+              onClick={() => !payModalLoading && setPayModalItem(null)}
+              className="px-4 py-2 text-slate-400 hover:text-white text-[11px] font-black uppercase transition-colors"
+            >
+              No
+            </button>
+            <button
+              type="button"
+              onClick={handlePaySingleConfirm}
+              disabled={payModalLoading}
+              className="px-6 py-2 rounded bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-white text-[11px] font-black uppercase tracking-widest shadow-lg"
+            >
+              {payModalLoading ? 'Processing...' : 'Yes'}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </PageWrapper>
   );
 };
