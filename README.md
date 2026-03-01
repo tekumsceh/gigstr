@@ -2,8 +2,8 @@ Good morning every one. Hope you are ok.
 
 GIgstr is a small pet project of mine trying to achieve basicaly three things that really should be three different 
 apps.
-Namely, Band scheduling, band mannagaing and accounting. It probbably will not do well in either, but it will not to well exactly as i want it, and for the small price of my time, of which i have plenty for now. SO there it is. 
-I don't need to tell you how to use this stuff. You all know how to use calendar and buttons, but anywaya
+Namely, Band scheduling, band mannagaing and accounting. It probbably will not do well in either. SO there it is. 
+I don't need to tell you how to use this stuff. You all know how to use calendar and buttons, but anyways
 In case ayone has any questions you can reach me at tekumsceh@gmail.com
 
 # React + Vite
