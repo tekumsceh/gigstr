@@ -1,32 +1,53 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
+import { useLanguage } from '../../context/LanguageContext';
 
 const GlobalFooter = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useLanguage();
   const [bandsModalOpen, setBandsModalOpen] = useState(false);
   const [bands, setBands] = useState([]);
   const [bandsLoading, setBandsLoading] = useState(false);
+  const bandsTimeoutRef = useRef(null);
 
   const isActive = (path) => location.pathname === path;
+
+  const startBandsAutoCloseTimer = () => {
+    if (bandsTimeoutRef.current) clearTimeout(bandsTimeoutRef.current);
+    bandsTimeoutRef.current = setTimeout(() => {
+      setBandsModalOpen(false);
+    }, 2000);
+  };
+
+  useEffect(() => {
+    // Clean up timer on unmount or when modal closes
+    return () => {
+      if (bandsTimeoutRef.current) clearTimeout(bandsTimeoutRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (bandsModalOpen) {
       setBandsLoading(true);
       axios.get('/api/my-bands')
-        .then(res => setBands(res.data.filter(b => !b.isSolo)))
+        .then(res => setBands(res.data || []))
         .catch(() => setBands([]))
         .finally(() => setBandsLoading(false));
+
+      startBandsAutoCloseTimer();
+    } else {
+      if (bandsTimeoutRef.current) clearTimeout(bandsTimeoutRef.current);
     }
   }, [bandsModalOpen]);
 
   const navItems = [
-    { path: '/', label: 'Home', icon: HomeIcon },
-    { path: '/add', label: 'Add Date', icon: CalendarIcon },
-    { path: '/valet', label: 'Valet', icon: ValetIcon },
-    { type: 'bands', label: 'My Bands', icon: BandsIcon },
-    { path: '/settings', label: 'Settings', icon: SettingsIcon },
+    { path: '/', labelKey: 'footer.home', icon: HomeIcon },
+    { path: '/add', labelKey: 'footer.addDate', icon: CalendarIcon },
+    { path: '/valet', labelKey: 'footer.valet', icon: ValetIcon },
+    { type: 'bands', labelKey: 'footer.myBands', icon: BandsIcon },
+    { path: '/settings', labelKey: 'footer.settings', icon: SettingsIcon },
   ];
 
   return (
@@ -35,14 +56,77 @@ const GlobalFooter = () => {
         {navItems.map((item) => {
           if (item.type === 'bands') {
             return (
-              <button
+              <div
                 key="bands"
-                onClick={() => setBandsModalOpen(true)}
-                className="flex flex-col items-center justify-center gap-1 transition-all min-w-[64px] text-slate-500 hover:text-white"
+                className="relative"
+                onMouseEnter={() => {
+                  if (bandsTimeoutRef.current) clearTimeout(bandsTimeoutRef.current);
+                }}
+                onMouseLeave={() => {
+                  if (bandsModalOpen) startBandsAutoCloseTimer();
+                }}
               >
-                <item.icon className="w-6 h-6" />
-                <span className="text-[9px] font-black uppercase tracking-tighter">{item.label}</span>
-              </button>
+                <button
+                  onClick={() => setBandsModalOpen((prev) => !prev)}
+                  className="flex flex-col items-center justify-center gap-1 transition-all min-w-[64px] text-slate-500 hover:text-white"
+                >
+                  <item.icon className="w-6 h-6" />
+                  <span className="text-[9px] font-black uppercase tracking-tighter">
+                    {t(item.labelKey)}
+                  </span>
+                </button>
+
+                {bandsModalOpen && (
+                  <div className="absolute bottom-14 left-1/2 -translate-x-1/2 bg-slate-900 border border-slate-700 rounded-lg shadow-2xl z-50 overflow-hidden inline-block">
+                    <div className="flex justify-between items-center px-3 py-2 border-b border-slate-800 bg-slate-950/80">
+                      <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500">
+                        {t('footer.myBandsModalTitle')}
+                      </h3>
+                      <button
+                        onClick={() => setBandsModalOpen(false)}
+                        className="text-slate-500 hover:text-white transition-colors text-sm font-bold leading-none"
+                        type="button"
+                      >
+                        ×
+                      </button>
+                    </div>
+                    <div className="max-h-64 overflow-y-auto custom-scrollbar p-2">
+                      {bandsLoading ? (
+                        <div className="py-4 text-center text-[10px] font-black uppercase text-slate-600 animate-pulse">
+                          {t('footer.loading')}
+                        </div>
+                      ) : bands.length === 0 ? (
+                        <div className="py-4 text-center text-[10px] font-black uppercase text-slate-500 italic">
+                          {t('footer.noBandsFound')}
+                        </div>
+                      ) : (
+                        <div className="space-y-1">
+                          {bands.map((band) => (
+                            <button
+                              key={band.bandID}
+                              type="button"
+                              onClick={() => {
+                                setBandsModalOpen(false);
+                                navigate(`/band/${band.bandID}/manage`);
+                              }}
+                              className="w-full flex items-center gap-3 px-3 py-2 rounded-md bg-slate-950/50 border border-slate-800 hover:border-orange-500/50 hover:bg-slate-800/60 transition-all text-left"
+                            >
+                              <div
+                                className="w-2.5 h-2.5 rounded-full shrink-0"
+                                style={{ backgroundColor: band.bandColor }}
+                              />
+                              <span className="text-[11px] font-black uppercase text-white tracking-tight truncate">
+                                {band.bandName}
+                                {band.isSolo ? ' (Solo)' : ''}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             );
           }
           return (
@@ -54,63 +138,11 @@ const GlobalFooter = () => {
               }`}
             >
               <item.icon className="w-6 h-6" />
-              <span className="text-[9px] font-black uppercase tracking-tighter">{item.label}</span>
+              <span className="text-[9px] font-black uppercase tracking-tighter">{t(item.labelKey)}</span>
             </button>
           );
         })}
       </footer>
-
-      {/* My Bands Modal */}
-      {bandsModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-            onClick={() => setBandsModalOpen(false)}
-          />
-          <div className="relative bg-slate-900 border border-slate-700 w-full max-w-sm max-h-[80vh] overflow-hidden rounded-lg shadow-2xl flex flex-col">
-            <div className="flex justify-between items-center p-4 border-b border-slate-800">
-              <h3 className="text-[12px] font-black uppercase tracking-[0.3em] text-orange-500">
-                My Bands
-              </h3>
-              <button
-                onClick={() => setBandsModalOpen(false)}
-                className="text-slate-500 hover:text-white transition-colors text-xl font-bold leading-none"
-              >
-                ×
-              </button>
-            </div>
-            <div className="overflow-y-auto custom-scrollbar flex-1 p-2">
-              {bandsLoading ? (
-                <div className="p-8 text-center text-[10px] font-black uppercase text-slate-600 animate-pulse">
-                  Loading...
-                </div>
-              ) : bands.length === 0 ? (
-                <div className="p-8 text-center text-[10px] font-black uppercase text-slate-500 italic">
-                  No bands found.
-                </div>
-              ) : (
-                <div className="space-y-1">
-                  {bands.map((band) => (
-                    <button
-                      key={band.bandID}
-                      onClick={() => {
-                        setBandsModalOpen(false);
-                        navigate(`/band/${band.bandID}/manage`);
-                      }}
-                      className="w-full flex items-center gap-3 p-4 rounded-lg bg-slate-950/50 border border-slate-800 hover:border-orange-500/50 hover:bg-slate-800/50 transition-all text-left"
-                    >
-                      <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: band.bandColor }} />
-                      <span className="text-sm font-black uppercase text-white tracking-tight truncate">
-                        {band.bandName}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 };

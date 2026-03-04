@@ -58,7 +58,7 @@ router.get("/api/dates", async (req, res) => {
         else if (paid === 'unpaid') finalData = results.filter(r => parseFloat(r.datePaidAmount) < parseFloat(r.datePrice));
         res.json(finalData);
     } catch (err) {
-        console.error("Dates GET Error:", err); 
+        console.error("Dates GET Error:", err);
         res.status(500).json({ error: "Failed to fetch dates" });
     }
 });
@@ -116,8 +116,9 @@ router.post("/api/add-date", isAuthenticated, async (req, res) => {
             INSERT INTO dates 
             (dateDate, bandID, venueID, datePrice, 
              dateCurrency, dateStart, dateLoadin, dateSoundcheck, dateDoors, 
-             dateCurfew, dateCategory, dateDescription, dateStatus, dateOwner) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             dateCurfew, dateCategory, dateContactOrganizer, dateContactTech,
+             dateDescription, dateStatus, dateOwner) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
         
         const values = [
@@ -132,6 +133,8 @@ router.post("/api/add-date", isAuthenticated, async (req, res) => {
             d.dateDoors || null, 
             d.dateCurfew || null,
             d.dateCategory || null, 
+            d.dateContactOrganizer || null,
+            d.dateContactTech || null,
             d.dateDescription || null, 
             d.dateStatus || 1,
             dateOwner

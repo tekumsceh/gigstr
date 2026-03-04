@@ -1,0 +1,50 @@
+[
+  {
+    "id": "u1",
+    "firstName": "Admin",
+    "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=Admin",
+    "status": "online"
+  },
+  {
+    "id": "u2",
+    "firstName": "Sarah",
+    "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah",
+    "status": "offline"
+  },
+  {
+    "id": "u3",
+    "firstName": "Miles",
+    "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=Miles",
+    "status": "online"
+  },
+  {
+    "id": "u4",
+    "firstName": "John",
+    "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=John",
+    "status": "online"
+  },
+  {
+    "id": "u5",
+    "firstName": "Kyle",
+    "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=Kyle",
+    "status": "offline"
+  },
+  {
+    "id": "u6",
+    "firstName": "Marcus",
+    "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=Marcus",
+    "status": "online"
+  },
+  {
+    "id": "u7",
+    "firstName": "T-800",
+    "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=T800",
+    "status": "online"
+  },
+  {
+    "id": "u8",
+    "firstName": "Dani",
+    "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=Dani",
+    "status": "offline"
+  }
+]

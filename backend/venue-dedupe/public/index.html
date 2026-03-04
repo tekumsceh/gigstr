@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Venue Dedupe</title>
+  <style>
+    body { font-family: sans-serif; background: #0f172a; color: #cbd5e1; padding: 20px; }
+    .container { max-width: 800px; margin: 0 auto; }
+    input[type="text"] { width: 100%; padding: 10px; margin-bottom: 20px; background: #1e293b; border: 1px solid #334155; color: white; border-radius: 4px; }
+    table { width: 100%; border-collapse: collapse; background: #1e293b; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #334155; }
+    tr:hover { background: #334155; }
+    .master-row { background: rgba(234, 88, 12, 0.15) !important; border-left: 4px solid #ea580c; }
+    .slave-row { background: rgba(255, 255, 255, 0.05); }
+    .btn { padding: 10px 20px; background: #ea580c; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 20px; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .badge { font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 4px; margin-left: 8px; }
+    .badge-master { background: #ea580c; color: white; }
+    .badge-slave { background: #64748b; color: white; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/fuse.js/dist/fuse.js"></script>
+</head>
+<body>
+
+<div class="container">
+  <h2>Venue Deduplication Tool</h2>
+  <p>Search for a venue. The <strong>FIRST</strong> box you check becomes the Master. All other checked venues will be merged into it and deleted.</p>
+
+  <input type="text" id="searchInput" placeholder="Type to fuzzy search venues (e.g., 'rxoy', 'theatre')...">
+
+  <table id="venueTable">
+    <thead>
+      <tr>
+        <th>Check</th>
+        <th>ID</th>
+        <th>Venue Name</th>
+        <th>Location</th>
+        <th>Gig Count</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody">
+      <tr><td colspan="5">Loading venues...</td></tr>
+    </tbody>
+  </table>
+
+  <button id="mergeBtn" class="btn" disabled>Select at least 2 venues to merge</button>
+</div>
+
+<script>
+  let allVenues = [];
+  let selectedOrder = []; 
+  let fuse; 
+
+  const tableBody = document.getElementById('tableBody');
+  const searchInput = document.getElementById('searchInput');
+  const mergeBtn = document.getElementById('mergeBtn');
+
+  async function loadVenues() {
+    try {
+      const res = await fetch('/api/venues');
+      allVenues = await res.json();
+      
+      fuse = new Fuse(allVenues, {
+        keys: [
+          'venueName', 
+          'venueCity', 
+          'venueCountry', 
+          'venueID'
+        ],
+        threshold: 0.4, 
+        ignoreLocation: true 
+      });
+
+      renderTable();
+    } catch (err) {
+      tableBody.innerHTML = '<tr><td colspan="5">Failed to load venues.</td></tr>';
+    }
+  }
+
+  function renderTable() {
+    const searchTerm = searchInput.value.trim();
+    tableBody.innerHTML = '';
+
+    let filteredVenues = allVenues;
+
+    if (searchTerm !== '') {
+      const results = fuse.search(searchTerm);
+      filteredVenues = results.map(result => result.item);
+    }
+
+    filteredVenues.forEach(v => {
+      const tr = document.createElement('tr');
+      const isMaster = selectedOrder[0] === v.venueID;
+      const isSlave = selectedOrder.includes(v.venueID) && !isMaster;
+
+      if (isMaster) tr.className = 'master-row';
+      if (isSlave) tr.className = 'slave-row';
+
+      const statusBadge = isMaster 
+        ? '<span class="badge badge-master">MASTER</span>' 
+        : (isSlave ? '<span class="badge badge-slave">Will Merge</span>' : '');
+
+      tr.innerHTML = `
+        <td><input type="checkbox" value="${v.venueID}" ${selectedOrder.includes(v.venueID) ? 'checked' : ''}></td>
+        <td>${v.venueID}</td>
+        <td><strong>${v.venueName || 'Unknown'}</strong> ${statusBadge}</td>
+        <td>${v.venueCity || ''}, ${v.venueCountry || ''}</td>
+        <td>${v.usageCount}</td>
+      `;
+
+      const checkbox = tr.querySelector('input');
+      checkbox.addEventListener('change', (e) => {
+        if (e.target.checked) {
+          selectedOrder.push(v.venueID);
+        } else {
+          selectedOrder = selectedOrder.filter(id => id !== v.venueID);
+        }
+        updateUI();
+      });
+
+      tableBody.appendChild(tr);
+    });
+  }
+
+  function updateUI() {
+    mergeBtn.disabled = selectedOrder.length < 2;
+    mergeBtn.textContent = selectedOrder.length > 1 
+      ? `Merge ${selectedOrder.length - 1} venue(s) into Master ID ${selectedOrder[0]}` 
+      : 'Select at least 2 venues to merge';
+    
+    renderTable(); 
+  }
+
+  mergeBtn.addEventListener('click', async () => {
+    if (selectedOrder.length < 2) return;
+
+    const confirmMsg = `Are you sure? \nVenue ID ${selectedOrder[0]} will be the Master.\nAll other selected venues will be permanently deleted.`;
+    if (!confirm(confirmMsg)) return;
+
+    mergeBtn.disabled = true;
+    mergeBtn.textContent = 'Merging...';
+
+    try {
+      const res = await fetch('/api/venues/merge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ selectedIds: selectedOrder })
+      });
+      
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      
+      alert('Success: ' + data.message);
+      
+      selectedOrder = [];
+      searchInput.value = '';
+      updateUI();
+      loadVenues();
+
+    } catch (err) {
+      alert('Merge failed: ' + err.message);
+      updateUI();
+    }
+  });
+
+  searchInput.addEventListener('input', renderTable);
+
+  loadVenues();
+</script>
+
+</body>
+</html>

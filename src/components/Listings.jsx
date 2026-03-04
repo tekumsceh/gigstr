@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '../context/LanguageContext';
 
 function getCurrencySymbol(currency) {
   const c = (currency || 'EUR').toUpperCase();
@@ -19,19 +20,20 @@ function formatMoney(num) {
 
 function Listings({ title, fields, manualData, loading, renderActions, onViewNote, hideHeader, viewMode = 'list', isValetMode = false, onValetItemClick, currencyView, eurToRsd = 117.2 }) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const formatHeader = (key) => {
     if (!key || typeof key !== 'string') return '';
-    if (key === 'dateDescription') return 'NOTES';
-    if (key === 'remainingBalance') return 'BALANCE';
-    if (key === 'statusName' || key === 'dateStatus') return 'STATUS';
+    if (key === 'dateDescription') return t('listings.notes');
+    if (key === 'remainingBalance') return t('listings.balance');
+    if (key === 'statusName' || key === 'dateStatus') return t('listings.status');
     return key.replace('date', '').toUpperCase();
   };
 
   if (loading) {
     return (
       <div className="p-10 text-center text-[12px] font-black uppercase tracking-[0.4em] text-slate-600 animate-pulse">
-        Scanning Ledger...
+        {t('listings.scanningLedger')}
       </div>
     );
   }
@@ -185,7 +187,7 @@ function Listings({ title, fields, manualData, loading, renderActions, onViewNot
                               className="group flex items-center gap-2"
                             >
                               <span className="text-[9px] font-black text-orange-500/60 group-hover:text-orange-400 uppercase tracking-widest transition-colors">
-                                [ View Notes ]
+                                {t('listings.viewNotes')}
                               </span>
                               <div className="w-1 h-1 rounded-full bg-orange-500 animate-pulse"></div>
                             </button>
@@ -203,7 +205,7 @@ function Listings({ title, fields, manualData, loading, renderActions, onViewNot
                               backgroundColor: isPast ? "#64748b10" : `${item.statusColor || "#ffffff"}10` 
                             }}
                           >
-                            {isPast ? "DONE" : (item.statusName || rawValue || "UNKNOWN")}
+                            {isPast ? t('listings.done') : (item.statusName || rawValue || t('listings.unknown'))}
                           </span>
                         ) : (
                           /* DEFAULT COLUMN LOGIC */

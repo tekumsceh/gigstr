@@ -12,6 +12,7 @@ import GlobalHeader from './components/layouts/GlobalHeader';
 import GlobalFooter from './components/layouts/GlobalFooter';
 import QuickActionFAB from './components/QuickActionFAB';
 import SettingsView from './views/SettingsView';
+import FinanceTodoView from './views/FinanceTodoView';
 import BandManagementView from './views/BandManagementView';
 
 function AppContent() {
@@ -28,8 +29,7 @@ function AppContent() {
       <main className={`flex-grow w-full flex flex-col min-h-0 ${isDateDetail ? 'overflow-hidden' : 'overflow-y-auto custom-scrollbar'}`}>
         <div className={isDateDetail ? 'flex-1 min-h-0 flex flex-col overflow-hidden' : ''}>
           <Routes>
-            <Route path="/login" element={<Login />} />
-            
+            <Route path="/login" element={<Login />} />            
             <Route path="/" element={<ProtectedRoute><HomeView /></ProtectedRoute>} />
             <Route path="/add" element={<ProtectedRoute><AddDateView /></ProtectedRoute>} />
             <Route path="/valet" element={<ProtectedRoute><ValetView /></ProtectedRoute>} />
@@ -37,6 +37,14 @@ function AppContent() {
             <Route path="/create-band" element={<ProtectedRoute><CreateBandView /></ProtectedRoute>} />
             <Route path="/band/:id/manage" element={<BandManagementView />} />
             <Route path="/settings" element={<SettingsView />} />
+            <Route
+              path="/finance-todo"
+              element={
+                <ProtectedRoute requiredRole="GOD">
+                  <FinanceTodoView />
+                </ProtectedRoute>
+              }
+            />
           </Routes>
         </div>
       </main>

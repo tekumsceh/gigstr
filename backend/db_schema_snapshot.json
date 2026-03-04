@@ -1,0 +1,1202 @@
+{
+  "generatedAt": "2026-03-04T11:51:43.617Z",
+  "database": "gigstr",
+  "tables": {
+    "bands": {
+      "columns": [
+        {
+          "COLUMN_NAME": "bandID",
+          "DATA_TYPE": "int",
+          "COLUMN_TYPE": "int(11)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "PRI",
+          "EXTRA": "auto_increment"
+        },
+        {
+          "COLUMN_NAME": "bandName",
+          "DATA_TYPE": "varchar",
+          "COLUMN_TYPE": "varchar(255)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "createdBy",
+          "DATA_TYPE": "varchar",
+          "COLUMN_TYPE": "varchar(255)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "createdAt",
+          "DATA_TYPE": "timestamp",
+          "COLUMN_TYPE": "timestamp",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": "current_timestamp()",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "bandColor",
+          "DATA_TYPE": "varchar",
+          "COLUMN_TYPE": "varchar(50)",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "'#3498db'",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "isSolo",
+          "DATA_TYPE": "tinyint",
+          "COLUMN_TYPE": "tinyint(1)",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "0",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        }
+      ],
+      "indexes": [
+        {
+          "Table": "bands",
+          "Non_unique": 0,
+          "Key_name": "PRIMARY",
+          "Seq_in_index": 1,
+          "Column_name": "bandID",
+          "Collation": "A",
+          "Cardinality": 2,
+          "Sub_part": null,
+          "Packed": null,
+          "Null": "",
+          "Index_type": "BTREE",
+          "Comment": "",
+          "Index_comment": ""
+        }
+      ],
+      "foreignKeys": []
+    },
+    "band_members": {
+      "columns": [
+        {
+          "COLUMN_NAME": "bandID",
+          "DATA_TYPE": "int",
+          "COLUMN_TYPE": "int(11)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "PRI",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "userID",
+          "DATA_TYPE": "varchar",
+          "COLUMN_TYPE": "varchar(255)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "PRI",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "role",
+          "DATA_TYPE": "enum",
+          "COLUMN_TYPE": "enum('owner','admin','bandit')",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": "'bandit'",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "joinedAt",
+          "DATA_TYPE": "timestamp",
+          "COLUMN_TYPE": "timestamp",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": "current_timestamp()",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "status",
+          "DATA_TYPE": "enum",
+          "COLUMN_TYPE": "enum('pending','active','declined')",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": "'pending'",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        }
+      ],
+      "indexes": [
+        {
+          "Table": "band_members",
+          "Non_unique": 0,
+          "Key_name": "PRIMARY",
+          "Seq_in_index": 1,
+          "Column_name": "bandID",
+          "Collation": "A",
+          "Cardinality": 4,
+          "Sub_part": null,
+          "Packed": null,
+          "Null": "",
+          "Index_type": "BTREE",
+          "Comment": "",
+          "Index_comment": ""
+        },
+        {
+          "Table": "band_members",
+          "Non_unique": 0,
+          "Key_name": "PRIMARY",
+          "Seq_in_index": 2,
+          "Column_name": "userID",
+          "Collation": "A",
+          "Cardinality": 4,
+          "Sub_part": null,
+          "Packed": null,
+          "Null": "",
+          "Index_type": "BTREE",
+          "Comment": "",
+          "Index_comment": ""
+        },
+        {
+          "Table": "band_members",
+          "Non_unique": 1,
+          "Key_name": "idx_user_status",
+          "Seq_in_index": 1,
+          "Column_name": "userID",
+          "Collation": "A",
+          "Cardinality": 2,
+          "Sub_part": null,
+          "Packed": null,
+          "Null": "",
+          "Index_type": "BTREE",
+          "Comment": "",
+          "Index_comment": ""
+        },
+        {
+          "Table": "band_members",
+          "Non_unique": 1,
+          "Key_name": "idx_user_status",
+          "Seq_in_index": 2,
+          "Column_name": "status",
+          "Collation": "A",
+          "Cardinality": 2,
+          "Sub_part": null,
+          "Packed": null,
+          "Null": "",
+          "Index_type": "BTREE",
+          "Comment": "",
+          "Index_comment": ""
+        }
+      ],
+      "foreignKeys": []
+    },
+    "dates": {
+      "columns": [
+        {
+          "COLUMN_NAME": "dateID",
+          "DATA_TYPE": "int",
+          "COLUMN_TYPE": "int(11)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "PRI",
+          "EXTRA": "auto_increment"
+        },
+        {
+          "COLUMN_NAME": "dateDate",
+          "DATA_TYPE": "date",
+          "COLUMN_TYPE": "date",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "dateStart",
+          "DATA_TYPE": "time",
+          "COLUMN_TYPE": "time",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "NULL",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "datePrice",
+          "DATA_TYPE": "float",
+          "COLUMN_TYPE": "float",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "NULL",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "dateCurrency",
+          "DATA_TYPE": "varchar",
+          "COLUMN_TYPE": "varchar(11)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": "'EUR'",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "dateStatus",
+          "DATA_TYPE": "int",
+          "COLUMN_TYPE": "int(11)",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "1",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "dateType",
+          "DATA_TYPE": "int",
+          "COLUMN_TYPE": "int(11)",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "1",
+          "COLUMN_KEY": "MUL",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "dateOwner",
+          "DATA_TYPE": "int",
+          "COLUMN_TYPE": "int(11)",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "NULL",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "dateUpdated",
+          "DATA_TYPE": "datetime",
+          "COLUMN_TYPE": "datetime",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": "current_timestamp()",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "dateDescription",
+          "DATA_TYPE": "varchar",
+          "COLUMN_TYPE": "varchar(256)",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "NULL",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "dateCategory",
+          "DATA_TYPE": "varchar",
+          "COLUMN_TYPE": "varchar(100)",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "NULL",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "dateLoadin",
+          "DATA_TYPE": "time",
+          "COLUMN_TYPE": "time",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "NULL",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "dateSoundcheck",
+          "DATA_TYPE": "time",
+          "COLUMN_TYPE": "time",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "NULL",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "dateDoors",
+          "DATA_TYPE": "time",
+          "COLUMN_TYPE": "time",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "NULL",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "dateCurfew",
+          "DATA_TYPE": "time",
+          "COLUMN_TYPE": "time",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "NULL",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "dateContactOrganizer",
+          "DATA_TYPE": "varchar",
+          "COLUMN_TYPE": "varchar(255)",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "NULL",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "dateContactTech",
+          "DATA_TYPE": "varchar",
+          "COLUMN_TYPE": "varchar(255)",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "NULL",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "dateForBand",
+          "DATA_TYPE": "int",
+          "COLUMN_TYPE": "int(11)",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "NULL",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "bandID",
+          "DATA_TYPE": "int",
+          "COLUMN_TYPE": "int(11)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "MUL",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "venueID",
+          "DATA_TYPE": "int",
+          "COLUMN_TYPE": "int(11)",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "NULL",
+          "COLUMN_KEY": "MUL",
+          "EXTRA": ""
+        }
+      ],
+      "indexes": [
+        {
+          "Table": "dates",
+          "Non_unique": 0,
+          "Key_name": "PRIMARY",
+          "Seq_in_index": 1,
+          "Column_name": "dateID",
+          "Collation": "A",
+          "Cardinality": 86,
+          "Sub_part": null,
+          "Packed": null,
+          "Null": "",
+          "Index_type": "BTREE",
+          "Comment": "",
+          "Index_comment": ""
+        },
+        {
+          "Table": "dates",
+          "Non_unique": 1,
+          "Key_name": "dateType",
+          "Seq_in_index": 1,
+          "Column_name": "dateType",
+          "Collation": "A",
+          "Cardinality": 6,
+          "Sub_part": null,
+          "Packed": null,
+          "Null": "YES",
+          "Index_type": "BTREE",
+          "Comment": "",
+          "Index_comment": ""
+        },
+        {
+          "Table": "dates",
+          "Non_unique": 1,
+          "Key_name": "idx_band_date",
+          "Seq_in_index": 1,
+          "Column_name": "bandID",
+          "Collation": "A",
+          "Cardinality": 6,
+          "Sub_part": null,
+          "Packed": null,
+          "Null": "",
+          "Index_type": "BTREE",
+          "Comment": "",
+          "Index_comment": ""
+        },
+        {
+          "Table": "dates",
+          "Non_unique": 1,
+          "Key_name": "idx_band_date",
+          "Seq_in_index": 2,
+          "Column_name": "dateDate",
+          "Collation": "A",
+          "Cardinality": 86,
+          "Sub_part": null,
+          "Packed": null,
+          "Null": "",
+          "Index_type": "BTREE",
+          "Comment": "",
+          "Index_comment": ""
+        },
+        {
+          "Table": "dates",
+          "Non_unique": 1,
+          "Key_name": "fk_dates_venue",
+          "Seq_in_index": 1,
+          "Column_name": "venueID",
+          "Collation": "A",
+          "Cardinality": 86,
+          "Sub_part": null,
+          "Packed": null,
+          "Null": "YES",
+          "Index_type": "BTREE",
+          "Comment": "",
+          "Index_comment": ""
+        }
+      ],
+      "foreignKeys": [
+        {
+          "CONSTRAINT_NAME": "fk_band_identity",
+          "COLUMN_NAME": "bandID",
+          "REFERENCED_TABLE_NAME": "bands",
+          "REFERENCED_COLUMN_NAME": "bandID"
+        },
+        {
+          "CONSTRAINT_NAME": "fk_dates_venue",
+          "COLUMN_NAME": "venueID",
+          "REFERENCED_TABLE_NAME": "venues",
+          "REFERENCED_COLUMN_NAME": "venueID"
+        }
+      ]
+    },
+    "dates_audit_ledger": {
+      "columns": [
+        {
+          "COLUMN_NAME": "auditID",
+          "DATA_TYPE": "int",
+          "COLUMN_TYPE": "int(11)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "PRI",
+          "EXTRA": "auto_increment"
+        },
+        {
+          "COLUMN_NAME": "dateID",
+          "DATA_TYPE": "int",
+          "COLUMN_TYPE": "int(11)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "action_type",
+          "DATA_TYPE": "varchar",
+          "COLUMN_TYPE": "varchar(50)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "old_bandID",
+          "DATA_TYPE": "int",
+          "COLUMN_TYPE": "int(11)",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "NULL",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "new_bandID",
+          "DATA_TYPE": "int",
+          "COLUMN_TYPE": "int(11)",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "NULL",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "old_datePrice",
+          "DATA_TYPE": "float",
+          "COLUMN_TYPE": "float",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "NULL",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "new_datePrice",
+          "DATA_TYPE": "float",
+          "COLUMN_TYPE": "float",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "NULL",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "changed_at",
+          "DATA_TYPE": "datetime",
+          "COLUMN_TYPE": "datetime",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "current_timestamp()",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        }
+      ],
+      "indexes": [
+        {
+          "Table": "dates_audit_ledger",
+          "Non_unique": 0,
+          "Key_name": "PRIMARY",
+          "Seq_in_index": 1,
+          "Column_name": "auditID",
+          "Collation": "A",
+          "Cardinality": 0,
+          "Sub_part": null,
+          "Packed": null,
+          "Null": "",
+          "Index_type": "BTREE",
+          "Comment": "",
+          "Index_comment": ""
+        }
+      ],
+      "foreignKeys": []
+    },
+    "exrate": {
+      "columns": [
+        {
+          "COLUMN_NAME": "exrateID",
+          "DATA_TYPE": "int",
+          "COLUMN_TYPE": "int(11)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "PRI",
+          "EXTRA": "auto_increment"
+        },
+        {
+          "COLUMN_NAME": "exrateEurToRsd",
+          "DATA_TYPE": "decimal",
+          "COLUMN_TYPE": "decimal(10,4)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "exrateRsdToEur",
+          "DATA_TYPE": "decimal",
+          "COLUMN_TYPE": "decimal(10,6)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "exrateUpdated",
+          "DATA_TYPE": "datetime",
+          "COLUMN_TYPE": "datetime",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "current_timestamp()",
+          "COLUMN_KEY": "",
+          "EXTRA": "on update current_timestamp()"
+        }
+      ],
+      "indexes": [
+        {
+          "Table": "exrate",
+          "Non_unique": 0,
+          "Key_name": "PRIMARY",
+          "Seq_in_index": 1,
+          "Column_name": "exrateID",
+          "Collation": "A",
+          "Cardinality": 0,
+          "Sub_part": null,
+          "Packed": null,
+          "Null": "",
+          "Index_type": "BTREE",
+          "Comment": "",
+          "Index_comment": ""
+        }
+      ],
+      "foreignKeys": []
+    },
+    "payments": {
+      "columns": [
+        {
+          "COLUMN_NAME": "paymentID",
+          "DATA_TYPE": "int",
+          "COLUMN_TYPE": "int(11)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "PRI",
+          "EXTRA": "auto_increment"
+        },
+        {
+          "COLUMN_NAME": "dateID",
+          "DATA_TYPE": "int",
+          "COLUMN_TYPE": "int(11)",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "NULL",
+          "COLUMN_KEY": "MUL",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "bulkGroup",
+          "DATA_TYPE": "varchar",
+          "COLUMN_TYPE": "varchar(50)",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "NULL",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "amountEUR",
+          "DATA_TYPE": "decimal",
+          "COLUMN_TYPE": "decimal(10,2)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "amountOriginal",
+          "DATA_TYPE": "decimal",
+          "COLUMN_TYPE": "decimal(10,2)",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "NULL",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "currency",
+          "DATA_TYPE": "varchar",
+          "COLUMN_TYPE": "varchar(3)",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "NULL",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "exchangeRate",
+          "DATA_TYPE": "decimal",
+          "COLUMN_TYPE": "decimal(10,4)",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "NULL",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "paymentDate",
+          "DATA_TYPE": "timestamp",
+          "COLUMN_TYPE": "timestamp",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": "current_timestamp()",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        }
+      ],
+      "indexes": [
+        {
+          "Table": "payments",
+          "Non_unique": 0,
+          "Key_name": "PRIMARY",
+          "Seq_in_index": 1,
+          "Column_name": "paymentID",
+          "Collation": "A",
+          "Cardinality": 77,
+          "Sub_part": null,
+          "Packed": null,
+          "Null": "",
+          "Index_type": "BTREE",
+          "Comment": "",
+          "Index_comment": ""
+        },
+        {
+          "Table": "payments",
+          "Non_unique": 1,
+          "Key_name": "idx_dateID",
+          "Seq_in_index": 1,
+          "Column_name": "dateID",
+          "Collation": "A",
+          "Cardinality": 77,
+          "Sub_part": null,
+          "Packed": null,
+          "Null": "YES",
+          "Index_type": "BTREE",
+          "Comment": "",
+          "Index_comment": ""
+        }
+      ],
+      "foreignKeys": [
+        {
+          "CONSTRAINT_NAME": "fk_payments_date",
+          "COLUMN_NAME": "dateID",
+          "REFERENCED_TABLE_NAME": "dates",
+          "REFERENCED_COLUMN_NAME": "dateID"
+        }
+      ]
+    },
+    "sessions": {
+      "columns": [
+        {
+          "COLUMN_NAME": "session_id",
+          "DATA_TYPE": "varchar",
+          "COLUMN_TYPE": "varchar(128)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "PRI",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "expires",
+          "DATA_TYPE": "int",
+          "COLUMN_TYPE": "int(11) unsigned",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "data",
+          "DATA_TYPE": "mediumtext",
+          "COLUMN_TYPE": "mediumtext",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "NULL",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        }
+      ],
+      "indexes": [
+        {
+          "Table": "sessions",
+          "Non_unique": 0,
+          "Key_name": "PRIMARY",
+          "Seq_in_index": 1,
+          "Column_name": "session_id",
+          "Collation": "A",
+          "Cardinality": 1,
+          "Sub_part": null,
+          "Packed": null,
+          "Null": "",
+          "Index_type": "BTREE",
+          "Comment": "",
+          "Index_comment": ""
+        }
+      ],
+      "foreignKeys": []
+    },
+    "status": {
+      "columns": [
+        {
+          "COLUMN_NAME": "statusID",
+          "DATA_TYPE": "int",
+          "COLUMN_TYPE": "int(11)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "PRI",
+          "EXTRA": "auto_increment"
+        },
+        {
+          "COLUMN_NAME": "statusName",
+          "DATA_TYPE": "varchar",
+          "COLUMN_TYPE": "varchar(11)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "statusColor",
+          "DATA_TYPE": "varchar",
+          "COLUMN_TYPE": "varchar(11)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        }
+      ],
+      "indexes": [
+        {
+          "Table": "status",
+          "Non_unique": 0,
+          "Key_name": "PRIMARY",
+          "Seq_in_index": 1,
+          "Column_name": "statusID",
+          "Collation": "A",
+          "Cardinality": 4,
+          "Sub_part": null,
+          "Packed": null,
+          "Null": "",
+          "Index_type": "BTREE",
+          "Comment": "",
+          "Index_comment": ""
+        }
+      ],
+      "foreignKeys": []
+    },
+    "type": {
+      "columns": [
+        {
+          "COLUMN_NAME": "typeID",
+          "DATA_TYPE": "int",
+          "COLUMN_TYPE": "int(11)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "PRI",
+          "EXTRA": "auto_increment"
+        },
+        {
+          "COLUMN_NAME": "typeName",
+          "DATA_TYPE": "varchar",
+          "COLUMN_TYPE": "varchar(11)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "typeColor",
+          "DATA_TYPE": "varchar",
+          "COLUMN_TYPE": "varchar(11)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        }
+      ],
+      "indexes": [
+        {
+          "Table": "type",
+          "Non_unique": 0,
+          "Key_name": "PRIMARY",
+          "Seq_in_index": 1,
+          "Column_name": "typeID",
+          "Collation": "A",
+          "Cardinality": 4,
+          "Sub_part": null,
+          "Packed": null,
+          "Null": "",
+          "Index_type": "BTREE",
+          "Comment": "",
+          "Index_comment": ""
+        },
+        {
+          "Table": "type",
+          "Non_unique": 1,
+          "Key_name": "typeID",
+          "Seq_in_index": 1,
+          "Column_name": "typeID",
+          "Collation": "A",
+          "Cardinality": 4,
+          "Sub_part": null,
+          "Packed": null,
+          "Null": "",
+          "Index_type": "BTREE",
+          "Comment": "",
+          "Index_comment": ""
+        }
+      ],
+      "foreignKeys": []
+    },
+    "users": {
+      "columns": [
+        {
+          "COLUMN_NAME": "userID",
+          "DATA_TYPE": "int",
+          "COLUMN_TYPE": "int(11)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "PRI",
+          "EXTRA": "auto_increment"
+        },
+        {
+          "COLUMN_NAME": "googleId",
+          "DATA_TYPE": "varchar",
+          "COLUMN_TYPE": "varchar(255)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "UNI",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "email",
+          "DATA_TYPE": "varchar",
+          "COLUMN_TYPE": "varchar(255)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "UNI",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "displayName",
+          "DATA_TYPE": "varchar",
+          "COLUMN_TYPE": "varchar(255)",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "NULL",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "role",
+          "DATA_TYPE": "enum",
+          "COLUMN_TYPE": "enum('GOD','admin','editor','musician','guest')",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "'musician'",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "createdAt",
+          "DATA_TYPE": "timestamp",
+          "COLUMN_TYPE": "timestamp",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": "current_timestamp()",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "picture",
+          "DATA_TYPE": "varchar",
+          "COLUMN_TYPE": "varchar(255)",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "NULL",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        }
+      ],
+      "indexes": [
+        {
+          "Table": "users",
+          "Non_unique": 0,
+          "Key_name": "PRIMARY",
+          "Seq_in_index": 1,
+          "Column_name": "userID",
+          "Collation": "A",
+          "Cardinality": 1,
+          "Sub_part": null,
+          "Packed": null,
+          "Null": "",
+          "Index_type": "BTREE",
+          "Comment": "",
+          "Index_comment": ""
+        },
+        {
+          "Table": "users",
+          "Non_unique": 0,
+          "Key_name": "googleId",
+          "Seq_in_index": 1,
+          "Column_name": "googleId",
+          "Collation": "A",
+          "Cardinality": 1,
+          "Sub_part": null,
+          "Packed": null,
+          "Null": "",
+          "Index_type": "BTREE",
+          "Comment": "",
+          "Index_comment": ""
+        },
+        {
+          "Table": "users",
+          "Non_unique": 0,
+          "Key_name": "email",
+          "Seq_in_index": 1,
+          "Column_name": "email",
+          "Collation": "A",
+          "Cardinality": 1,
+          "Sub_part": null,
+          "Packed": null,
+          "Null": "",
+          "Index_type": "BTREE",
+          "Comment": "",
+          "Index_comment": ""
+        }
+      ],
+      "foreignKeys": []
+    },
+    "valet": {
+      "columns": [
+        {
+          "COLUMN_NAME": "valetID",
+          "DATA_TYPE": "int",
+          "COLUMN_TYPE": "int(11)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "PRI",
+          "EXTRA": "auto_increment"
+        },
+        {
+          "COLUMN_NAME": "valetDate",
+          "DATA_TYPE": "int",
+          "COLUMN_TYPE": "int(11)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "valetUpdate",
+          "DATA_TYPE": "datetime",
+          "COLUMN_TYPE": "datetime",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": "current_timestamp()",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        }
+      ],
+      "indexes": [
+        {
+          "Table": "valet",
+          "Non_unique": 0,
+          "Key_name": "PRIMARY",
+          "Seq_in_index": 1,
+          "Column_name": "valetID",
+          "Collation": "A",
+          "Cardinality": 0,
+          "Sub_part": null,
+          "Packed": null,
+          "Null": "",
+          "Index_type": "BTREE",
+          "Comment": "",
+          "Index_comment": ""
+        }
+      ],
+      "foreignKeys": []
+    },
+    "venues": {
+      "columns": [
+        {
+          "COLUMN_NAME": "venueID",
+          "DATA_TYPE": "int",
+          "COLUMN_TYPE": "int(11)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "PRI",
+          "EXTRA": "auto_increment"
+        },
+        {
+          "COLUMN_NAME": "venueName",
+          "DATA_TYPE": "varchar",
+          "COLUMN_TYPE": "varchar(255)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "MUL",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "venueCity",
+          "DATA_TYPE": "varchar",
+          "COLUMN_TYPE": "varchar(255)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": "''",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "venueCountry",
+          "DATA_TYPE": "varchar",
+          "COLUMN_TYPE": "varchar(255)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": "''",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "venueAddress",
+          "DATA_TYPE": "varchar",
+          "COLUMN_TYPE": "varchar(500)",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "NULL",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "venuePostalCode",
+          "DATA_TYPE": "varchar",
+          "COLUMN_TYPE": "varchar(20)",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "NULL",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "venueNotes",
+          "DATA_TYPE": "text",
+          "COLUMN_TYPE": "text",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "NULL",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "venueCreated",
+          "DATA_TYPE": "datetime",
+          "COLUMN_TYPE": "datetime",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "current_timestamp()",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        }
+      ],
+      "indexes": [
+        {
+          "Table": "venues",
+          "Non_unique": 0,
+          "Key_name": "PRIMARY",
+          "Seq_in_index": 1,
+          "Column_name": "venueID",
+          "Collation": "A",
+          "Cardinality": 72,
+          "Sub_part": null,
+          "Packed": null,
+          "Null": "",
+          "Index_type": "BTREE",
+          "Comment": "",
+          "Index_comment": ""
+        },
+        {
+          "Table": "venues",
+          "Non_unique": 0,
+          "Key_name": "uk_venue_location",
+          "Seq_in_index": 1,
+          "Column_name": "venueName",
+          "Collation": "A",
+          "Cardinality": 72,
+          "Sub_part": 100,
+          "Packed": null,
+          "Null": "",
+          "Index_type": "BTREE",
+          "Comment": "",
+          "Index_comment": ""
+        },
+        {
+          "Table": "venues",
+          "Non_unique": 0,
+          "Key_name": "uk_venue_location",
+          "Seq_in_index": 2,
+          "Column_name": "venueCity",
+          "Collation": "A",
+          "Cardinality": 72,
+          "Sub_part": 100,
+          "Packed": null,
+          "Null": "",
+          "Index_type": "BTREE",
+          "Comment": "",
+          "Index_comment": ""
+        },
+        {
+          "Table": "venues",
+          "Non_unique": 0,
+          "Key_name": "uk_venue_location",
+          "Seq_in_index": 3,
+          "Column_name": "venueCountry",
+          "Collation": "A",
+          "Cardinality": 72,
+          "Sub_part": 100,
+          "Packed": null,
+          "Null": "",
+          "Index_type": "BTREE",
+          "Comment": "",
+          "Index_comment": ""
+        }
+      ],
+      "foreignKeys": []
+    }
+  }
+}

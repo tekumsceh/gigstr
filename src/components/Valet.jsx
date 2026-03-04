@@ -1,46 +1,41 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import ValetView from '../views/ValetView'; // Ensure this path is correct
+import ValetView from '../views/ValetView'; 
 import { fetchFromApi, postToApi, convertToEur } from '../services/dataService';
 
 function Valet() {
   const [rawData, setRawData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [rate, setRate] = useState(null);
-  
-  // Initialize with the new Object-style filters for the Query Engine
+  const [rate, setRate] = useState(null);  
   const [filters, setFilters] = useState({ 
     dateDate: { operator: 'Year', value: new Date().getFullYear().toString() }, 
     timeline: { operator: 'Timeline', value: 'past' },
-    // We can add a default sort here
     sort: { operator: 'Sort', value: 'newest' }
   });
 
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      // Use the new POST route we built in the backend
-      const json = await postToApi("query/dates", { filters });
-      setRawData(Array.isArray(json) ? json : []);
-      
-      // Fetch rate only once if it doesn't exist
-      if (!rate) {
-        const rateData = await fetchFromApi("current-rate");
-        setRate(rateData);
-      }
-    } catch (error) {
-      console.error("Valet Load Error:", error);
-      setRawData([]);
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  // Re-run whenever filters change
   useEffect(() => {
-    loadData();
+    fetchFromApi("current-rate")
+      .then(rateData => setRate(rateData))
+      .catch(err => console.error("Rate fetch error:", err));
+  }, []);
+
+  useEffect(() => {
+    const loadDates = async () => {
+      setLoading(true);
+      try {
+        const json = await postToApi("query/dates", { filters });
+        setRawData(Array.isArray(json) ? json : []);
+      } catch (error) {
+        console.error("Valet Load Error:", error);
+        setRawData([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDates();
   }, [filters]);
 
-  // Safe calculation of totalDue
   const totalDue = useMemo(() => {
     if (!rawData.length) return 0;
     return rawData.reduce((acc, item) => {
@@ -52,12 +47,16 @@ function Valet() {
 
   const handleSinglePay = async (id, debt) => {
     if (debt <= 0.01) return;
+    // Note for later: We can upgrade this window.confirm to a custom Modal!
     if (!window.confirm(`Pay off remaining €${debt.toFixed(2)} for this event?`)) return;
 
     try {
       const result = await postToApi(`pay-single/${id}`, {});
       if (result?.success) {
-        loadData(); 
+        // Trigger a re-fetch by technically not changing the filters, 
+        // but since we need fresh data, we can re-call the API.
+        // A simple trick to force a re-fetch is spreading the existing filters:
+        setFilters(prev => ({ ...prev })); 
       }
     } catch (err) {
       console.error("Single Pay Error:", err);
@@ -74,22 +73,24 @@ function Valet() {
         currency,
         exchangeRate: rate?.exrateEurToRsd
       });
-      loadData(); 
+      // Force refresh
+      setFilters(prev => ({ ...prev }));
     } catch (err) {
       console.error("Bulk Pay Error:", err);
     }
   };
 
-return (
-  <ValetView 
-    data={rawData}
-    loading={loading}
-    rate={rate}
-    totalDue={totalDue}
-    onFilterChange={setFilters} 
-    onSinglePay={handleSinglePay}
-    onBulkPay={handleBulkPay}
-  />
-);
+  return (
+    <ValetView 
+      data={rawData}
+      loading={loading}
+      rate={rate}
+      totalDue={totalDue}
+      onFilterChange={setFilters} 
+      onSinglePay={handleSinglePay}
+      onBulkPay={handleBulkPay}
+    />
+  );
 }
+
 export default Valet;

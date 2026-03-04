@@ -1,6 +1,8 @@
 import React from 'react';
+import { useLanguage } from '../../context/LanguageContext';
 
 export default function Modal({ isOpen, onClose, title, children, variant = 'default' }) {
+  const { t } = useLanguage();
   if (!isOpen) return null;
 
   return (
@@ -14,7 +16,7 @@ export default function Modal({ isOpen, onClose, title, children, variant = 'def
           onClick={onClose} 
           className="btn btn-secondary mt-4 w-full uppercase tracking-widest text-[10px]"
         >
-          Close
+          {t('common.close')}
         </button>
       </div>
     </div>
