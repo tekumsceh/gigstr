@@ -58,7 +58,7 @@ router.get("/api/dates", async (req, res) => {
         else if (paid === 'unpaid') finalData = results.filter(r => parseFloat(r.datePaidAmount) < parseFloat(r.datePrice));
         res.json(finalData);
     } catch (err) {
-        console.error("Dates GET Error:", err); 
+        console.error("Dates GET Error:", err);
         res.status(500).json({ error: "Failed to fetch dates" });
     }
 });
@@ -116,8 +116,9 @@ router.post("/api/add-date", isAuthenticated, async (req, res) => {
             INSERT INTO dates 
             (dateDate, bandID, venueID, datePrice, 
              dateCurrency, dateStart, dateLoadin, dateSoundcheck, dateDoors, 
-             dateCurfew, dateCategory, dateDescription, dateStatus, dateOwner) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             dateCurfew, dateCategory, dateContactOrganizer, dateContactTech,
+             dateDescription, dateStatus, dateOwner) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
         
         const values = [
@@ -132,6 +133,8 @@ router.post("/api/add-date", isAuthenticated, async (req, res) => {
             d.dateDoors || null, 
             d.dateCurfew || null,
             d.dateCategory || null, 
+            d.dateContactOrganizer || null,
+            d.dateContactTech || null,
             d.dateDescription || null, 
             d.dateStatus || 1,
             dateOwner
@@ -292,6 +295,7 @@ router.post("/api/dates/pay-single/:id", isGod, async (req, res) => {
         const values = [dateID, null, amountEUR, amountOriginal, dateCurrency, exrateEurToRsd, paymentDate];
         
         await connection.query(insertSql, values);
+        await connection.query('UPDATE dates SET dateUpdated = NOW() WHERE dateID = ?', [dateID]);
         await connection.commit();
 
         res.json({ success: true, message: `Payment of ${amountEUR.toFixed(2)} EUR for gig ${dateID} processed.` });
@@ -333,6 +337,21 @@ router.post("/api/dates/pay-bulk", isGod, async (req, res) => {
             `;
             const values = [dateID, bulkGroup, amountEUR, amountOriginal, currency, exchangeRate, paymentDate];
             await connection.query(sql, values);
+        }
+
+        // Touch dateUpdated for all affected dates
+        const uniqueDateIds = Array.from(
+          new Set(
+            payments
+              .map((p) => p.id)
+              .filter((id) => id != null)
+          )
+        );
+        if (uniqueDateIds.length > 0) {
+          await connection.query(
+            `UPDATE dates SET dateUpdated = NOW() WHERE dateID IN (${uniqueDateIds.map(() => '?').join(',')})`,
+            uniqueDateIds
+          );
         }
 
         await connection.commit();

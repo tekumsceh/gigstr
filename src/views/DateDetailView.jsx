@@ -1,18 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { fetchFromApi, postToApi, deleteFromApi } from '../services/dataService';
+import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
+import VenueAutocomplete from '../components/VenueAutocomplete';
 import PageWrapper from '../components/layouts/PageWrapper';
 import SingleColumnLayout from '../components/layouts/SingleColumnLayout';
 
 function DateDetailView() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { t } = useLanguage();
+  const { user } = useAuth();
   const [event, setEvent] = useState(null);
   const [statuses, setStatuses] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
-  const { register, handleSubmit, reset } = useForm();
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showPrice, setShowPrice] = useState(false);
+  const { register, handleSubmit, reset, control, setValue } = useForm();
 
   useEffect(() => {
     Promise.all([
@@ -53,34 +60,38 @@ function DateDetailView() {
     }
   };
 
-  const onDelete = async (targetId) => {
+  const onDeleteClick = (targetId) => {
     const finalId = typeof targetId === 'object' ? targetId.dateID : targetId;
-    if (!finalId) return;
-    if (window.confirm('Are you sure you want to expunge this entry?')) {
-      try {
-        const response = await deleteFromApi(`delete-date/${finalId}`);
-        if (response.success) navigate('/');
-      } catch (err) {
-        alert('Delete failed: ' + err.message);
-      }
+    if (finalId) setShowDeleteModal(finalId);
+  };
+
+  const onDeleteConfirm = async () => {
+    if (!showDeleteModal) return;
+    const finalId = showDeleteModal;
+    setShowDeleteModal(false);
+    try {
+      const response = await deleteFromApi(`delete-date/${finalId}`);
+      if (response.success) navigate('/');
+    } catch (err) {
+      alert('Delete failed: ' + err.message);
     }
   };
 
-  if (loading) return <div className="p-8 text-center text-slate-500 uppercase font-black text-sm">Loading Ledger...</div>;
-  if (!event) return <div className="p-8 text-center text-red-500 uppercase font-black text-sm">Event not found.</div>;
+  if (loading) return <div className="p-8 text-center text-slate-500 uppercase font-black text-sm">{t('dateDetail.loadingLedger')}</div>;
+  if (!event) return <div className="p-8 text-center text-red-500 uppercase font-black text-sm">{t('dateDetail.eventNotFound')}</div>;
 
   const rawDate = event.dateDate ? event.dateDate.substring(0, 10) : null;
   const displayDate = rawDate
     ? (() => {
         const [y, m, d] = rawDate.split('-');
-        return `${d}-${m}-${y.slice(-2)}`;
+        // Script-style: 23.03.2026
+        return `${d}.${m}.${y}`;
       })()
     : '—';
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const eventDate = new Date(rawDate || 0);
   const isPast = eventDate < today;
-  const accentColor = event.bandColor || '#ff5f00';
   const paid = parseFloat(event.datePaidAmount || 0);
   const price = parseFloat(event.datePrice || 0);
   const balance = price - paid;
@@ -90,33 +101,89 @@ function DateDetailView() {
 
   return (
     <PageWrapper className="pt-0 pb-4 flex-1 min-h-0 flex flex-col overflow-hidden">
-      <SingleColumnLayout maxWidth="max-w-[900px]" className="pt-0 flex-1 min-h-0 flex flex-col overflow-hidden">
-        <div className="w-full flex-1 min-h-0 flex flex-col bg-slate-900/20 border border-slate-800 rounded-lg overflow-visible">
-          {/* Compact header */}
-          <div
-            className="px-4 py-3 sm:px-6 sm:py-4 border-b border-slate-800 shrink-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
-            style={{ borderLeft: `6px solid ${accentColor}` }}
-          >
-            <div className="min-w-0">
-              <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider" style={{ color: accentColor }}>
-                {event.bandName}
-                {isPast && <span className="text-slate-600 opacity-60 ml-2">// ARCHIVED</span>}
-              </span>
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-white uppercase tracking-tight leading-tight truncate mt-0.5">
-                {displayDate} · {event.dateCity || '—'}
-              </h1>
-            </div>
-            <div className="flex gap-3 shrink-0">
-              <button type="button" onClick={() => navigate(-1)} className="text-xs font-black uppercase tracking-wider text-slate-400 hover:text-white transition-colors py-2">
-                Back
+      {/* Delete confirmation modal */}
+      {showDeleteModal && (
+        <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
+          <div className="modal-content modal-error" onClick={(e) => e.stopPropagation()}>
+            <h2 className="modal-title">{t('dateDetail.deleteTitle')}</h2>
+            <p className="modal-text text-slate-300">{t('dateDetail.deleteConfirm')}</p>
+            <div className="flex gap-3 mt-4">
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(false)}
+                className="flex-1 py-2.5 text-xs font-black uppercase tracking-wider border border-slate-600 text-slate-300 rounded hover:bg-slate-800 transition-colors"
+              >
+                {t('common.cancel')}
               </button>
+              <button
+                type="button"
+                onClick={onDeleteConfirm}
+                className="flex-1 py-2.5 text-xs font-black uppercase tracking-wider bg-red-600 hover:bg-red-500 text-white rounded transition-colors"
+              >
+                {t('common.delete')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <SingleColumnLayout maxWidth="max-w-[900px]" className="pt-0 flex-1 min-h-0 flex flex-col overflow-hidden">
+        {/* Back button row */}
+        <div className="w-full flex justify-start mb-3 px-4 sm:px-0">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="text-xs font-black uppercase tracking-wider text-slate-400 hover:text-white transition-colors py-2"
+          >
+            {t('common.back')}
+          </button>
+        </div>
+
+        <div className="w-full flex-1 min-h-0 flex flex-col bg-slate-900/20 border border-slate-800 rounded-lg overflow-visible">
+          {/* Band row with edit icon */}
+          <div className="px-4 sm:px-6 pt-4 pb-2 border-b border-slate-800">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3">
+                <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest whitespace-nowrap">
+                  {t('home.band')}:
+                </span>
+                <span className="text-sm sm:text-base font-bold text-slate-200">
+                  {event.bandName || '—'}
+                  {isPast && (
+                    <span className="ml-2 text-[10px] font-black uppercase tracking-widest text-slate-600">
+                      {t('dateDetail.archived')}
+                    </span>
+                  )}
+                </span>
+              </div>
               {!isPast && (
                 <button
                   type="button"
                   onClick={() => setIsEditing(!isEditing)}
-                  className="text-xs font-black uppercase tracking-wider bg-white text-black px-4 py-2 sm:px-5 sm:py-2.5 hover:bg-orange-500 hover:text-white transition-all rounded"
+                  className="p-2 rounded-full bg-slate-800 border border-slate-700 text-slate-200 hover:bg-orange-500 hover:border-orange-500 hover:text-white transition-colors flex items-center justify-center"
+                  aria-label={isEditing ? t('common.cancel') : t('dateDetail.edit')}
                 >
-                  {isEditing ? 'Cancel' : 'Edit'}
+                  {/* Pen icon */}
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="none"
+                    stroke="currentColor"
+                    className="w-4 h-4"
+                  >
+                    <path
+                      d="M4 13.5V16h2.5L14 8.5l-2.5-2.5L4 13.5z"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M11.5 6l2-2a1.414 1.414 0 012 2l-2 2"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
                 </button>
               )}
             </div>
@@ -130,62 +197,184 @@ function DateDetailView() {
             >
             <div className="space-y-6">
               {/* Location */}
-              <Section title="Location">
+              <Section title={t('addDate.location')}>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                  <DetailRow label="Date" value={rawDate} field="dateDate" type="date" isEditing={isEditing} register={register} displayValue={displayDate} />
-                  <DetailRow label="City" value={event.dateCity} field="dateCity" isEditing={isEditing} register={register} />
-                  <DetailRow label="Venue" value={event.dateVenue} field="dateVenue" isEditing={isEditing} register={register} />
-                  <DetailRow label="Country" value={event.dateCountry} field="dateCountry" isEditing={isEditing} register={register} />
+                  <DetailRow label={t('addDate.date')} value={rawDate} field="dateDate" type="date" isEditing={isEditing} register={register} displayValue={displayDate} />
+                  <DetailRow label={t('addDate.city')} value={event.dateCity} field="dateCity" isEditing={isEditing} register={register} />
+                  {isEditing ? (
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{t('addDate.venue')}</span>
+                      <Controller
+                        name="dateVenue"
+                        control={control}
+                        render={({ field }) => (
+                          <VenueAutocomplete
+                            value={field.value}
+                            onChange={field.onChange}
+                            onBlur={field.onBlur}
+                            onSelect={(venue) => {
+                              setValue("dateVenue", venue.venueName || '');
+                              setValue("dateCity", venue.venueCity || '');
+                              setValue("dateCountry", venue.venueCountry || '');
+                            }}
+                            placeholder={t('addDate.venuePlaceholder')}
+                          />
+                        )}
+                      />
+                    </div>
+                  ) : (
+                    <DetailRow label={t('addDate.venue')} value={event.dateVenue} readOnly />
+                  )}
+                  <DetailRow label={t('addDate.country')} value={event.dateCountry} field="dateCountry" isEditing={isEditing} register={register} />
                 </div>
               </Section>
 
               {/* Schedule */}
-              <Section title="Schedule">
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-                  <DetailRow label="Show" value={timeVal(event.dateStart)} field="dateStart" type="time" isEditing={isEditing} register={register} />
-                  <DetailRow label="Load-in" value={timeVal(event.dateLoadin)} field="dateLoadin" type="time" isEditing={isEditing} register={register} />
-                  <DetailRow label="Soundcheck" value={timeVal(event.dateSoundcheck)} field="dateSoundcheck" type="time" isEditing={isEditing} register={register} />
-                  <DetailRow label="Doors" value={timeVal(event.dateDoors)} field="dateDoors" type="time" isEditing={isEditing} register={register} />
-                  <DetailRow label="Curfew" value={timeVal(event.dateCurfew)} field="dateCurfew" type="time" isEditing={isEditing} register={register} />
-                </div>
+              <Section title={t('addDate.schedule')}>
+                {isEditing ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+                    <DetailRow
+                      label={t('addDate.loadIn')}
+                      value={timeVal(event.dateLoadin)}
+                      field="dateLoadin"
+                      type="time"
+                      isEditing={isEditing}
+                      register={register}
+                    />
+                    <DetailRow
+                      label={t('addDate.soundcheck')}
+                      value={timeVal(event.dateSoundcheck)}
+                      field="dateSoundcheck"
+                      type="time"
+                      isEditing={isEditing}
+                      register={register}
+                    />
+                    <DetailRow
+                      label={t('addDate.doors')}
+                      value={timeVal(event.dateDoors)}
+                      field="dateDoors"
+                      type="time"
+                      isEditing={isEditing}
+                      register={register}
+                    />
+                    <DetailRow
+                      label={t('addDate.show')}
+                      value={timeVal(event.dateStart)}
+                      field="dateStart"
+                      type="time"
+                      isEditing={isEditing}
+                      register={register}
+                    />
+                    <DetailRow
+                      label={t('addDate.curfew')}
+                      value={timeVal(event.dateCurfew)}
+                      field="dateCurfew"
+                      type="time"
+                      isEditing={isEditing}
+                      register={register}
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-1 text-sm sm:text-base text-slate-200">
+                    <div className="flex flex-wrap gap-x-4 gap-y-1">
+                      <span>
+                        {t('addDate.loadIn')}: {timeVal(event.dateLoadin) || '—'}
+                      </span>
+                      <span>
+                        {t('addDate.soundcheck')}: {timeVal(event.dateSoundcheck) || '—'}
+                      </span>
+                      <span>
+                        {t('addDate.doors')}: {timeVal(event.dateDoors) || '—'}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1">
+                      <span>
+                        {t('addDate.show')}: {timeVal(event.dateStart) || '—'}
+                      </span>
+                      <span>
+                        {t('addDate.curfew')}: {timeVal(event.dateCurfew) || '—'}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </Section>
 
               {/* Money */}
-              <Section title="Money">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                  <DetailRow label="Price" value={price != null ? `${price}${sym}` : null} field="datePrice" type="number" isEditing={isEditing} register={register} />
-                  <DetailRow
-                    label="Currency"
-                    value={event.dateCurrency}
-                    field="dateCurrency"
-                    isEditing={isEditing}
-                    register={register}
-                    options={[
-                      { id: 'EUR', name: 'EUR' },
-                      { id: 'USD', name: 'USD' },
-                      { id: 'GBP', name: 'GBP' },
-                      { id: 'RSD', name: 'RSD' },
-                    ]}
-                  />
-                  {!isEditing && paid > 0 && <DetailRow label="Paid" value={`${paid}${sym}`} readOnly />}
-                  {!isEditing && balance > 0.01 && <DetailRow label="Balance" value={`${balance.toFixed(2)}${sym}`} readOnly />}
-                </div>
+              <Section title={t('addDate.money')}>
+                {isEditing ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                    <DetailRow
+                      label={t('addDate.price')}
+                      value={price != null ? `${price}${sym}` : null}
+                      field="datePrice"
+                      type="number"
+                      isEditing={isEditing}
+                      register={register}
+                    />
+                    <DetailRow
+                      label={t('addDate.currency')}
+                      value={event.dateCurrency}
+                      field="dateCurrency"
+                      isEditing={isEditing}
+                      register={register}
+                      options={[
+                        { id: 'EUR', name: 'EUR' },
+                        { id: 'USD', name: 'USD' },
+                        { id: 'GBP', name: 'GBP' },
+                        { id: 'RSD', name: 'RSD' },
+                      ]}
+                    />
+                  </div>
+                ) : (
+                  <div className="mt-2 flex flex-col items-start gap-3">
+                    {user?.role === 'GOD' && (
+                      <>
+                        {!showPrice && (
+                          <button
+                            type="button"
+                            onClick={() => setShowPrice(true)}
+                            className="px-4 py-2 text-[11px] font-black uppercase tracking-widest rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors"
+                          >
+                            Show price
+                          </button>
+                        )}
+                        {showPrice && (
+                          <span className="text-sm sm:text-base font-bold text-slate-200">
+                            {t('addDate.price')}: {price != null ? `${price}${sym}` : '—'}
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/date/${id}/finance`)}
+                          className="px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded bg-emerald-700 hover:bg-emerald-600 text-white border border-emerald-600 transition-colors"
+                        >
+                          Open finance worksheet
+                        </button>
+                      </>
+                    )}
+                    {user?.role !== 'GOD' && (
+                      <span className="text-xs text-slate-500">
+                        Price and settlement details are managed by the band admin.
+                      </span>
+                    )}
+                  </div>
+                )}
               </Section>
 
               {/* Contacts */}
-              <Section title="Contacts">
+              <Section title={t('addDate.contacts')}>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                  <DetailRow label="Organizer" value={event.dateContactOrganizer} field="dateContactOrganizer" isEditing={isEditing} register={register} />
-                  <DetailRow label="Tech" value={event.dateContactTech} field="dateContactTech" isEditing={isEditing} register={register} />
+                  <DetailRow label={t('addDate.organizer')} value={event.dateContactOrganizer} field="dateContactOrganizer" isEditing={isEditing} register={register} />
+                  <DetailRow label={t('addDate.tech')} value={event.dateContactTech} field="dateContactTech" isEditing={isEditing} register={register} />
                 </div>
               </Section>
 
               {/* Status & Category */}
-              <Section title="Details">
+              <Section title={t('addDate.details')}>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                  <DetailRow label="Category" value={event.dateCategory} field="dateCategory" isEditing={isEditing} register={register} />
+                  <DetailRow label={t('addDate.category')} value={event.dateCategory} field="dateCategory" isEditing={isEditing} register={register} />
                   <DetailRow
-                    label="Status"
+                    label={t('addDate.status')}
                     value={isPast ? 'DONE' : event.statusName}
                     field="dateStatus"
                     isEditing={isEditing && !isPast}
@@ -197,12 +386,12 @@ function DateDetailView() {
               </Section>
 
               {/* Notes */}
-              <Section title="Notes">
+              <Section title={t('addDate.notes')}>
                 {isEditing ? (
                   <textarea
                     {...register('dateDescription')}
                     className="w-full bg-slate-950 border border-slate-700 rounded p-3 sm:p-4 text-sm sm:text-base text-slate-300 font-medium min-h-[100px] outline-none focus:border-orange-500/50 resize-y"
-                    placeholder="Add notes..."
+                    placeholder={t('addDate.notesPlaceholder')}
                   />
                 ) : (
                   <p className="text-sm sm:text-base text-slate-400 leading-relaxed whitespace-pre-wrap border border-slate-700 rounded px-3 py-3 sm:px-4 sm:py-4 bg-slate-950/50 min-h-[100px]">{event.dateDescription || '—'}</p>
@@ -218,17 +407,17 @@ function DateDetailView() {
           <div className="flex items-center justify-end gap-2 p-4 mt-4 pb-6 border-t border-slate-800">
             <button
               type="button"
-              onClick={() => onDelete(event.dateID)}
+              onClick={() => onDeleteClick(event.dateID)}
               className="px-4 py-2.5 text-xs font-black uppercase tracking-wider text-red-500 border border-red-800/50 rounded hover:bg-red-900/30 transition-colors"
             >
-              Delete
+              {t('common.delete')}
             </button>
             <button
               type="button"
               onClick={handleSubmit(onSubmit)}
               className="px-5 py-2.5 text-xs font-black uppercase tracking-wider bg-orange-500 text-white rounded hover:bg-orange-400 transition-colors"
             >
-              Save
+              {t('common.save')}
             </button>
           </div>
         )}
@@ -248,33 +437,35 @@ function Section({ title, children }) {
 
 function DetailRow({ label, value, field, isEditing, register, type = 'text', options, valueAsNumber = false, readOnly, displayValue }) {
   const showVal = displayValue ?? value;
+  const isEditable = isEditing && register && !readOnly;
+
   return (
-    <div className="flex flex-col gap-0.5">
-      <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{label}</span>
-      {readOnly ? (
-        <span className="text-sm sm:text-base font-bold text-slate-200 truncate border border-slate-700 rounded px-3 py-2 bg-slate-950/50">{showVal ?? '—'}</span>
-      ) : isEditing && register ? (
-        options ? (
-          <select
-            {...register(field, { valueAsNumber })}
-            className="bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm sm:text-base text-white font-bold outline-none focus:border-orange-500/50"
-          >
-            {options.map((opt) => (
-              <option key={opt.id} value={opt.id} className="bg-slate-900">
-                {opt.name}
-              </option>
-            ))}
-          </select>
-        ) : (
-          <input
-            {...register(field)}
-            type={type}
-            step={type === 'number' ? '0.01' : undefined}
-            className="bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm sm:text-base text-white font-bold outline-none focus:border-orange-500/50"
-          />
-        )
+    <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3 w-full">
+      <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest whitespace-nowrap">
+        {label}:
+      </span>
+      {readOnly || !isEditable ? (
+        <span className="text-sm sm:text-base font-bold text-slate-200">
+          {showVal ?? '—'}
+        </span>
+      ) : options ? (
+        <select
+          {...register(field, { valueAsNumber })}
+          className="flex-1 bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm sm:text-base text-white font-bold outline-none focus:border-orange-500/50"
+        >
+          {options.map((opt) => (
+            <option key={opt.id} value={opt.id} className="bg-slate-900">
+              {opt.name}
+            </option>
+          ))}
+        </select>
       ) : (
-        <span className="text-sm sm:text-base font-bold text-slate-200 truncate border border-slate-700 rounded px-3 py-2 bg-slate-950/50">{showVal ?? '—'}</span>
+        <input
+          {...register(field)}
+          type={type}
+          step={type === 'number' ? '0.01' : undefined}
+          className="flex-1 bg-slate-950 border border-slate-700 rounded px-3 py-2 text-sm sm:text-base text-white font-bold outline-none focus:border-orange-500/50"
+        />
       )}
     </div>
   );

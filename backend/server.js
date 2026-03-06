@@ -7,6 +7,8 @@ const authRoutes = require('./routes/authRoutes');
 const eventRoutes = require('./routes/eventRoutes');
 const bandRoutes = require('./routes/bandRoutes');
 const venueRoutes = require('./routes/venueRoutes');
+const financeTodoRoutes = require('./routes/financeTodoRoutes');
+const financeRoutes = require('./routes/financeRoutes');
 const express = require('express');
 const mysql = require('mysql2/promise'); 
 const cors = require('cors');
@@ -42,6 +44,8 @@ app.use('/', authRoutes);
 app.use('/', eventRoutes);
 app.use('/', bandRoutes);
 app.use('/', venueRoutes);
+app.use('/', financeTodoRoutes);
+app.use('/', financeRoutes);
 
 const isGod = (req, res, next) => {
     if (!req.isAuthenticated()) return res.status(401).json({ error: "Unauthorized: Please log in." });

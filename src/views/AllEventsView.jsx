@@ -1,21 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import Filtering from '../components/Filtering';
+import { useLanguage } from '../context/LanguageContext';
 
 function AllEventsView() {
+  const { t } = useLanguage();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({}); // Stores the standardized { field: { op, val } }
+  const [filters, setFilters] = useState({});
 
   const loadData = async () => {
     setLoading(true);
     try {
-      // We use POST now to send the filter object easily in the body
       const response = await fetch(`/api/query/dates`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ filters })
       });
-      
       const json = await response.json();
       setEvents(Array.isArray(json) ? json : []);
     } catch (error) {
@@ -47,8 +47,8 @@ function AllEventsView() {
   return (
     <div className="flex flex-col h-full bg-slate-950 text-slate-200">
       <header className="px-6 py-4 border-b border-slate-900 bg-slate-950 flex justify-between items-center shrink-0">
-        <h2 className="text-2xl font-black italic uppercase tracking-tighter text-blue-500">Master Schedule</h2>
-        <div className="text-xl font-mono font-bold text-slate-400">{events.length} <span className="text-[10px] uppercase">Events</span></div>
+        <h2 className="text-2xl font-black italic uppercase tracking-tighter text-blue-500">{t('allEvents.masterSchedule')}</h2>
+        <div className="text-xl font-mono font-bold text-slate-400">{events.length} <span className="text-[10px] uppercase">{t('allEvents.events')}</span></div>
       </header>
 
       {/* NEW SMART FILTER BAR */}
@@ -63,7 +63,7 @@ function AllEventsView() {
           <table className="w-full text-left border-collapse mt-2">
               <thead className="sticky top-0 bg-slate-950 z-10 border-b border-slate-900">
                   <tr>
-                      {['Date', 'City', 'Venue', 'Status'].map(h => (
+                      {[t('allEvents.date'), t('allEvents.city'), t('allEvents.venue'), t('allEvents.status')].map(h => (
                           <th key={h} className="py-4 text-[10px] font-black text-slate-600 uppercase tracking-wider">{h}</th>
                       ))}
                   </tr>

@@ -1,9 +1,11 @@
 import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 const Avatar = () => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuTimeoutRef = useRef(null);
 
@@ -34,13 +36,13 @@ const Avatar = () => {
       >
           <div className="flex flex-col items-start leading-none">
           <span className="text-[10px] font-black uppercase tracking-widest text-white mb-1">
-            {user?.displayName || 'Musician'}
+            {user?.displayName || t('avatar.musician')}
           </span>
         </div>
         <div className="relative flex items-center justify-center w-10 h-10 rounded-full bg-slate-800 p-[2px] border border-slate-700 group-hover:border-orange-500 transition-colors shadow-lg">
           <img 
             src={user?.picture || `https://ui-avatars.com/api/?name=${user?.displayName || 'M'}&background=1e293b&color=fff`}
-            alt="User Avatar" 
+            alt={t('avatar.userAvatar')} 
             referrerPolicy="no-referrer"
             className="w-full h-full rounded-full object-cover"
           />
@@ -54,13 +56,13 @@ const Avatar = () => {
             onClick={() => setIsMenuOpen(false)}
             className="block px-4 py-3 text-[11px] font-black uppercase tracking-widest text-slate-300 hover:bg-slate-800 hover:text-white transition-all border-b border-slate-800"
           >
-            View Profile
+            {t('avatar.viewProfile')}
           </Link>
           <button 
             onClick={handleLogout}
             className="block w-full text-left px-4 py-3 text-[11px] font-black uppercase tracking-widest text-red-500 hover:bg-red-500/10 transition-all"
           >
-            Logout
+            {t('avatar.logout')}
           </button>
         </div>
       )}

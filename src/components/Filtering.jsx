@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '../context/LanguageContext';
 
 // Zero-dependency icons
 const ListIcon = () => (
@@ -23,20 +24,22 @@ const GridIcon = () => (
 
 function Filtering({ 
   options = {}, 
-  activeFilters = {}, // Default to empty object to prevent undefined errors
+  activeFilters = {},
   onFilterChange, 
   showLimit, 
   onLimitChange,
   viewMode = 'list',
   onViewChange,
-  yearLabel = 'Timeline',
-  bandLabel = 'Category',
+  yearLabel: yearLabelProp,
+  bandLabel: bandLabelProp,
   showYearFilter = true,
   showBandFilter = true,
   showRowLimit = true,
-  title, // Optional: renders on the left (e.g. "Upcoming Schedule")
+  title,
 }) {
-  
+  const { t } = useLanguage();
+  const yearLabel = yearLabelProp ?? t('home.year');
+  const bandLabel = bandLabelProp ?? t('home.band');
   const update = (field, value) => {
     if (onFilterChange) {
       onFilterChange({ ...activeFilters, [field]: value });
@@ -65,7 +68,7 @@ function Filtering({
           onChange={(e) => update('year', e.target.value)}
           value={activeFilters?.year || 'all'}
         >
-          <option value="all" className="bg-slate-900 text-white">All Years</option>
+          <option value="all" className="bg-slate-900 text-white">{t('filtering.allYears')}</option>
           {options.years?.map(year => (
             <option key={year} value={year} className="bg-slate-900 text-white">{year}</option>
           ))}
@@ -84,7 +87,7 @@ function Filtering({
           onChange={(e) => update('bandID', e.target.value)}
           value={activeFilters?.bandID || 'all'}
         >
-          <option value="all" className="bg-slate-900 text-white">All Types</option>
+          <option value="all" className="bg-slate-900 text-white">{t('filtering.allTypes')}</option>
           {options.bandID?.map(opt => (
             // FIX: Using opt.bandID for the key and value instead of opt.typeID, 
             // assuming your data structure uses bandID for bands.
@@ -104,7 +107,7 @@ function Filtering({
         {/* Row Limit Toggles */}
         {showRowLimit && onLimitChange && (
           <div className="flex items-center gap-2 border-l border-slate-800 pl-4">
-            <span className="text-[8px] text-slate-500 font-black uppercase tracking-tighter">Rows</span>
+            <span className="text-[8px] text-slate-500 font-black uppercase tracking-tighter">{t('filtering.rows')}</span>
             <div className="flex items-center gap-1">
               {[20, 40].map(num => (
                 <button
@@ -129,7 +132,7 @@ function Filtering({
               type="button"
               onClick={() => onViewChange('list')}
               className={`px-2 py-1 transition-all ${viewMode === 'list' ? 'text-white' : 'text-slate-600 hover:text-slate-400'}`}
-              aria-label="List View"
+              aria-label={t('filtering.listView')}
             >
               <ListIcon />
             </button>
@@ -137,7 +140,7 @@ function Filtering({
               type="button"
               onClick={() => onViewChange('grid')}
               className={`px-2 py-1 transition-all ${viewMode === 'grid' ? 'text-white' : 'text-slate-600 hover:text-slate-400'}`}
-              aria-label="Grid View"
+              aria-label={t('filtering.gridView')}
             >
               <GridIcon />
             </button>

@@ -1,0 +1,142 @@
+Project Specification: Band Finance & Settlement Engine
+
+1. Core Philosophy
+
+- Decoupled Workflow: Gig logistics (Calendar/Venue) are created first. Financial settlements are a separate administrative layer.
+- The "Worksheet" Model: Admins manipulate numbers in a private draft state. Results are only visible to members once "Published."
+- Simple Accounting: Track the flow of money from Gross Total → Expenses → Individual Payouts.
+- Database Integrity: Financial records are strictly RESTRICT on delete. They cannot be erased if they are linked to a past date.
+
+2. Database Architecture (The "Vault")
+
+To keep things intuitive, we will use a line-item ledger approach. Instead of many specific columns, we use a flexible table that can handle any type of money movement.
+
+New Table: finances_ledger
+
+- ledgerID (Primary Key)
+- dateID (Foreign Key to dates)
+- category (ENUM: 'expense', 'payout', 'band_fund')
+- label (String: e.g., "Gas", "Sound Engineer", "Lead Singer")
+- targetUserID (Nullable Foreign Key to users - used for member payouts)
+- amount (Decimal 10,2)
+- status (ENUM: 'draft', 'published', 'paid')
+
+This table acts as the source of truth for all money related to a gig.
+
+3. The "Waterfall" Logic
+
+The system calculates the settlement in a top-down priority order:
+
+1) Gross Amount: Pulled from dates.datePrice.
+2) External Expenses: Subtracted from Gross (e.g., booking commissions, travel, gear rental).
+3) Net Profit: The remaining amount after expenses.
+4) Distribution: The Net Profit is then split among members based on:
+   - Fixed Rate: (e.g., session player gets 150€ regardless of profit).
+   - Percentage/Split: (e.g., 4 members share the remainder equally).
+
+4. User Roles & Visibility
+
+- Band Owner / Admin: Full access to the worksheet. Can add expenses, change payout amounts, and click "Publish."
+- Band Member: Can only see their own payout amount and the status (Pending/Paid) once published. They never see the full gig price or other members' payouts.
+- Manager / Tech: Can see the gross total and relevant expenses (if permitted), but not individual member payouts unless explicitly granted.
+- Price Visibility: The full price for a given date (e.g., dates.datePrice / gross amount) is visible only to the band owner/admin and only inside their admin/finance area. It must never appear in public date listings or member-facing views.
+- Member Valet / Wallet: Each member's "Valet" or "My Wallet" view functions as their personal ledger, showing only their own money flow (payouts, status, history) derived from the underlying finances_ledger.
+
+5. Development Roadmap (Phases)
+
+Phase 1: Database Hardening (Current Next Step)
+- Apply NOT NULL constraints to bandID.
+- Establish ON DELETE RESTRICT for all financial links.
+- Create the finances_ledger table.
+
+Phase 2: The Admin Worksheet (Front-end)
+- Create a "Finance" tab in the Band Admin area.
+- Build a dynamic UI where admins can add "line items" (expenses or payouts).
+- Add a "Balance" indicator that shows if the gross price equals (expenses + payouts).
+
+Phase 3: The Member Ledger (Personal View)
+- Build a "My Wallet" or "Earnings" page for individual users.
+- Display a list of all gigs where a payout is assigned to them.
+- Provide filters for Owed, Paid, and Pending Settlement.
+- Member-Initiated Payout Logging: Members use their Valet / Wallet interface to record when they have personally received money (e.g., cash from a gig). These entries are written to the finances_ledger as member-side payments and linked to the relevant date.
+- Admin Oversight of Member Payouts: When a member files a payment for a date, the band owner/admin receives a silent, non-intrusive notification so they can track each member's payout state (what has been reported as received, what is still owed, and for which dates).
+
+6. Business Rules (The "Must-Haves")
+
+- No Silent Deletes: If a payout is marked as 'Paid', the related gig cannot be deleted.
+- Automatic Timestamps: Every financial change must trigger a dateUpdated update in the parent dates table.
+- Transparency: Once a settlement is 'Published', any subsequent changes by the admin should trigger a notification to the affected members.
+- Immutability After Payment: For status = 'paid', existing ledger entries must not be edited or deleted. Any corrections must be recorded as new ledger rows (adjustments) that reference the original settlement.
+- Settlement Grouping: Each settlement for a given gig should be grouped under a shared identifier (e.g., settlementID) so that all related ledger rows are versioned together and you can track "Settlement #1", "Settlement #2", etc. for the same date.
+
+7. Implementation Breakdown (Build Flow)
+
+Phase 1: Database Hardening & Ledger Backbone
+- Inventory existing tables related to gigs, bands, users, and dates (including current foreign keys and constraints).
+- Add NOT NULL constraints to bandID and any other core foreign keys that should never be null.
+- Create the finances_ledger table with:
+  - ledgerID (PK), dateID (FK to dates), category, label, targetUserID (FK to users, nullable), amount, status.
+  - settlementID (nullable grouping field) to associate rows with a specific settlement version.
+  - createdAt / updatedAt timestamps.
+- Add ON DELETE RESTRICT constraints for all financial links (e.g., dates → finances_ledger, users → finances_ledger).
+- Ensure every write to finances_ledger also updates the parent dates.dateUpdated timestamp.
+- Backfill or migrate any existing financial data (if needed) into finances_ledger for consistency.
+
+Phase 2: Backend Worksheet & Settlement Logic
+- Implement backend services / modules to:
+  - Read gross amount from dates.datePrice.
+  - Aggregate external expenses (category = 'expense') per date.
+  - Compute net profit and distribution proposals based on fixed rates and split rules.
+- Define an internal "Worksheet" API for admins:
+  - CRUD operations for draft ledger line items (expenses, payouts, band_fund).
+  - Endpoints to "Publish" a settlement:
+    - Assign or bump settlementID for the date.
+    - Lock relevant rows to status = 'published' or 'paid' rules.
+- Enforce immutability rules in the API:
+  - Prevent editing/deleting ledger rows once status = 'paid'.
+  - Require adjustments via new ledger entries that reference the original settlementID.
+
+Phase 3: Admin Finance UI (Worksheet)
+- Add a "Finance" tab in the Band Admin area (owner/admin only).
+- Build a dynamic line-item editor for:
+  - Creating/editing expenses and payouts in draft state.
+  - Labeling each row (e.g., Gas, Sound Engineer, Lead Singer).
+- Display a real-time "Waterfall" summary:
+  - Gross → Expenses → Net → Distribution.
+  - Balance indicator showing whether gross == expenses + payouts.
+- Provide controls to:
+  - Save worksheet drafts.
+  - Publish settlements (triggering status changes and notifications).
+  - View historical settlements per date (by settlementID).
+
+Phase 4: Member Valet / Wallet UI
+- Build the "My Wallet" / Valet page for logged-in members:
+  - List all gigs where targetUserID = current user.
+  - Show per-gig payout amount, status (Owed, Pending, Paid), and relevant dates.
+- Ensure visibility rules:
+  - Only show the member's own payouts and statuses.
+  - Never expose gross gig price or other members' payouts.
+- Implement member-initiated payout logging:
+  - UI for members to record that they received money (e.g., cash after the gig).
+  - Backend endpoint to write these as ledger entries (linked to the date and user).
+
+Phase 5: Notifications & Oversight
+- Implement a lightweight notification system (or integrate with existing one) to:
+  - Notify members when a settlement is published that affects them.
+  - Notify band owner/admin silently when a member submits a payout via Valet.
+- Add admin overview screens:
+  - Per-date and per-member summaries of what is owed vs what has been reported as received.
+  - Filters for Owed, Paid, Pending Settlement across the band.
+
+Phase 6: Permissions, Auditing & QA
+- Double-check role-based access control:
+  - Only admins/owners can view and edit full worksheets and gross prices.
+  - Members can only see their own ledger entries and statuses.
+  - Tech/Managers have read-only access to selected aggregates as configured.
+- Add audit-friendly logging (or leverage existing logging) for key actions:
+  - Publishing settlements, marking entries as paid, creating adjustment rows.
+- Write automated tests for:
+  - Waterfall calculations.
+  - Immutability after payment.
+  - Visibility and permission boundaries.
+  - Business rules around ON DELETE RESTRICT and dateUpdated updates.

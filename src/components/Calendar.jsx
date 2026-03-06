@@ -126,17 +126,8 @@ function Calendar({ gigs = [], onSelectDate }) {
           return (
     <button
       key={idx}
-      draggable={item.isCurrentMonth} // Only allow dragging days from the current month
-      onDragStart={(e) => {
-        e.dataTransfer.setData("text/plain", dateStr);
-        e.dataTransfer.effectAllowed = "copy";
-        e.currentTarget.style.opacity = '0.5';
-      }}
-      onDragEnd={(e) => {
-        e.currentTarget.style.opacity = '1';
-      }}
       onClick={() => onSelectDate && onSelectDate(dayGigs, d)}
-      className="aspect-square flex flex-col items-center justify-center text-[11px] font-black transition-all relative group cursor-grab active:cursor-grabbing"
+      className="aspect-square flex flex-col items-center justify-center text-[11px] font-black transition-all relative group cursor-pointer"
       style={cellStyle}
     >
       <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
