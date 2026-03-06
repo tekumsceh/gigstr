@@ -12,6 +12,7 @@ const Settings = () => {
     { id: 'language', labelKey: 'settings.language' },
     { id: 'account', labelKey: 'settings.account' },
     { id: 'privacy', labelKey: 'settings.privacy' },
+    { id: 'docs', labelKey: 'settings.docs' },
   ];
 
   const darkPalettes = palettes.filter(p => p.type === 'dark');
@@ -140,6 +141,88 @@ const Settings = () => {
         {activeTab === 'privacy' && (
           <div className="text-slate-500 text-[10px] uppercase font-bold tracking-widest italic">
             {t('settings.privacyPhase2')}
+          </div>
+        )}
+
+        {activeTab === 'docs' && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <header>
+              <h2 className="text-[14px] font-black uppercase text-white">
+                {t('settings.financeWorksheetTitle')}
+              </h2>
+              <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-1">
+                {t('settings.financeWorksheetSubtitle')}
+              </p>
+            </header>
+
+            <section className="space-y-3 text-sm text-slate-200">
+              <p>
+                The Event Settlement Worksheet is the authoritative source of truth for fund distribution. It provides a
+                sandbox environment where administrators can model expenses and payouts privately before committing them
+                to the permanent ledger.
+              </p>
+              <div className="space-y-3 text-[13px] text-slate-300">
+                <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+                  Financial Settlement Protocol
+                </h3>
+                <p>
+                  The Event Settlement Worksheet is the authoritative source of truth for fund distribution. It provides
+                  a &quot;sandbox&quot; environment where administrators can model expenses and payouts privately before
+                  committing them to the permanent ledger.
+                </p>
+
+                <h4 className="text-[11px] font-black uppercase tracking-widest text-slate-400 mt-4">
+                  The Waterfall Reconciliation Process
+                </h4>
+                <p>To ensure fiscal accuracy, the system employs a rigid reconciliation check:</p>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>
+                    <strong>Revenue Input:</strong> The worksheet initializes with the Contracted Gross Revenue.
+                  </li>
+                  <li>
+                    <strong>Expense Deduction:</strong> Operational costs (Logistics, Commissions, Rentals) are recorded
+                    as line items.
+                  </li>
+                  <li>
+                    <strong>Personnel Allocation:</strong> The remaining funds are allocated to specific personnel
+                    (Performers, Technicians, Managers).
+                  </li>
+                  <li>
+                    <strong>Verification:</strong> The Balance Check indicator will remain active until the total of all
+                    line items precisely matches the Gross Revenue. A settlement cannot be published until this balance
+                    is achieved.
+                  </li>
+                </ul>
+
+                <h4 className="text-[11px] font-black uppercase tracking-widest text-slate-400 mt-4">
+                  Status &amp; Lifecycle
+                </h4>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>
+                    <strong>Draft:</strong> Line items are visible only to GOD-level administrators. They can be added
+                    or deleted freely during the planning phase.
+                  </li>
+                  <li>
+                    <strong>Published:</strong> Upon publication, specific payout data becomes visible to the relevant
+                    personnel in their individual ledgers.
+                  </li>
+                  <li>
+                    <strong>Paid:</strong> Once a payout is marked as &quot;Paid&quot;, the entry is locked. Deletion or
+                    modification of Paid items is strictly prohibited by the database architecture.
+                  </li>
+                </ul>
+
+                <h4 className="text-[11px] font-black uppercase tracking-widest text-slate-400 mt-4">
+                  Corrective Entries
+                </h4>
+                <p>
+                  In compliance with standard accounting practices, if an error is discovered in a &quot;Paid&quot;
+                  entry, the original record remains untouched. Administrators must instead issue a Corrective
+                  Adjustment Line (a new entry with a positive or negative value) to reconcile the discrepancy. This
+                  ensures a transparent, chronological audit trail of all financial movements.
+                </p>
+              </div>
+            </section>
           </div>
         )}
 

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { fetchFromApi, postToApi, deleteFromApi } from '../services/dataService';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 import VenueAutocomplete from '../components/VenueAutocomplete';
 import PageWrapper from '../components/layouts/PageWrapper';
 import SingleColumnLayout from '../components/layouts/SingleColumnLayout';
@@ -11,6 +12,7 @@ function DateDetailView() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const { user } = useAuth();
   const [event, setEvent] = useState(null);
   const [statuses, setStatuses] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
@@ -324,19 +326,35 @@ function DateDetailView() {
                     />
                   </div>
                 ) : (
-                  <div className="mt-2 flex flex-col items-start gap-2">
-                    {!showPrice && (
-                      <button
-                        type="button"
-                        onClick={() => setShowPrice(true)}
-                        className="px-4 py-2 text-[11px] font-black uppercase tracking-widest rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors"
-                      >
-                        Show price
-                      </button>
+                  <div className="mt-2 flex flex-col items-start gap-3">
+                    {user?.role === 'GOD' && (
+                      <>
+                        {!showPrice && (
+                          <button
+                            type="button"
+                            onClick={() => setShowPrice(true)}
+                            className="px-4 py-2 text-[11px] font-black uppercase tracking-widest rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors"
+                          >
+                            Show price
+                          </button>
+                        )}
+                        {showPrice && (
+                          <span className="text-sm sm:text-base font-bold text-slate-200">
+                            {t('addDate.price')}: {price != null ? `${price}${sym}` : '—'}
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/date/${id}/finance`)}
+                          className="px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded bg-emerald-700 hover:bg-emerald-600 text-white border border-emerald-600 transition-colors"
+                        >
+                          Open finance worksheet
+                        </button>
+                      </>
                     )}
-                    {showPrice && (
-                      <span className="text-sm sm:text-base font-bold text-slate-200">
-                        {t('addDate.price')}: {price != null ? `${price}${sym}` : '—'}
+                    {user?.role !== 'GOD' && (
+                      <span className="text-xs text-slate-500">
+                        Price and settlement details are managed by the band admin.
                       </span>
                     )}
                   </div>

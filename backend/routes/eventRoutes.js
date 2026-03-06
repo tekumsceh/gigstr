@@ -295,6 +295,7 @@ router.post("/api/dates/pay-single/:id", isGod, async (req, res) => {
         const values = [dateID, null, amountEUR, amountOriginal, dateCurrency, exrateEurToRsd, paymentDate];
         
         await connection.query(insertSql, values);
+        await connection.query('UPDATE dates SET dateUpdated = NOW() WHERE dateID = ?', [dateID]);
         await connection.commit();
 
         res.json({ success: true, message: `Payment of ${amountEUR.toFixed(2)} EUR for gig ${dateID} processed.` });
@@ -336,6 +337,21 @@ router.post("/api/dates/pay-bulk", isGod, async (req, res) => {
             `;
             const values = [dateID, bulkGroup, amountEUR, amountOriginal, currency, exchangeRate, paymentDate];
             await connection.query(sql, values);
+        }
+
+        // Touch dateUpdated for all affected dates
+        const uniqueDateIds = Array.from(
+          new Set(
+            payments
+              .map((p) => p.id)
+              .filter((id) => id != null)
+          )
+        );
+        if (uniqueDateIds.length > 0) {
+          await connection.query(
+            `UPDATE dates SET dateUpdated = NOW() WHERE dateID IN (${uniqueDateIds.map(() => '?').join(',')})`,
+            uniqueDateIds
+          );
         }
 
         await connection.commit();

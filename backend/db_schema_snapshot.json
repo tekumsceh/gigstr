@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-04T11:51:43.617Z",
+  "generatedAt": "2026-03-04T12:07:44.361Z",
   "database": "gigstr",
   "tables": {
     "bands": {
@@ -617,6 +617,316 @@
       ],
       "foreignKeys": []
     },
+    "finances_ledger": {
+      "columns": [
+        {
+          "COLUMN_NAME": "ledgerID",
+          "DATA_TYPE": "int",
+          "COLUMN_TYPE": "int(11)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "PRI",
+          "EXTRA": "auto_increment"
+        },
+        {
+          "COLUMN_NAME": "dateID",
+          "DATA_TYPE": "int",
+          "COLUMN_TYPE": "int(11)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "MUL",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "bandID",
+          "DATA_TYPE": "int",
+          "COLUMN_TYPE": "int(11)",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "NULL",
+          "COLUMN_KEY": "MUL",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "targetUserID",
+          "DATA_TYPE": "int",
+          "COLUMN_TYPE": "int(11)",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "NULL",
+          "COLUMN_KEY": "MUL",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "category",
+          "DATA_TYPE": "enum",
+          "COLUMN_TYPE": "enum('expense','payout','band_fund')",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "label",
+          "DATA_TYPE": "varchar",
+          "COLUMN_TYPE": "varchar(255)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "amount",
+          "DATA_TYPE": "decimal",
+          "COLUMN_TYPE": "decimal(10,2)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "status",
+          "DATA_TYPE": "enum",
+          "COLUMN_TYPE": "enum('draft','published','paid')",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": "'draft'",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "settlementID",
+          "DATA_TYPE": "int",
+          "COLUMN_TYPE": "int(11)",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "NULL",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "createdAt",
+          "DATA_TYPE": "datetime",
+          "COLUMN_TYPE": "datetime",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": "current_timestamp()",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "updatedAt",
+          "DATA_TYPE": "datetime",
+          "COLUMN_TYPE": "datetime",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": "current_timestamp()",
+          "COLUMN_KEY": "",
+          "EXTRA": "on update current_timestamp()"
+        }
+      ],
+      "indexes": [
+        {
+          "Table": "finances_ledger",
+          "Non_unique": 0,
+          "Key_name": "PRIMARY",
+          "Seq_in_index": 1,
+          "Column_name": "ledgerID",
+          "Collation": "A",
+          "Cardinality": 0,
+          "Sub_part": null,
+          "Packed": null,
+          "Null": "",
+          "Index_type": "BTREE",
+          "Comment": "",
+          "Index_comment": ""
+        },
+        {
+          "Table": "finances_ledger",
+          "Non_unique": 1,
+          "Key_name": "idx_fin_ledger_date",
+          "Seq_in_index": 1,
+          "Column_name": "dateID",
+          "Collation": "A",
+          "Cardinality": 0,
+          "Sub_part": null,
+          "Packed": null,
+          "Null": "",
+          "Index_type": "BTREE",
+          "Comment": "",
+          "Index_comment": ""
+        },
+        {
+          "Table": "finances_ledger",
+          "Non_unique": 1,
+          "Key_name": "idx_fin_ledger_band",
+          "Seq_in_index": 1,
+          "Column_name": "bandID",
+          "Collation": "A",
+          "Cardinality": 0,
+          "Sub_part": null,
+          "Packed": null,
+          "Null": "YES",
+          "Index_type": "BTREE",
+          "Comment": "",
+          "Index_comment": ""
+        },
+        {
+          "Table": "finances_ledger",
+          "Non_unique": 1,
+          "Key_name": "idx_fin_ledger_user",
+          "Seq_in_index": 1,
+          "Column_name": "targetUserID",
+          "Collation": "A",
+          "Cardinality": 0,
+          "Sub_part": null,
+          "Packed": null,
+          "Null": "YES",
+          "Index_type": "BTREE",
+          "Comment": "",
+          "Index_comment": ""
+        }
+      ],
+      "foreignKeys": [
+        {
+          "CONSTRAINT_NAME": "fk_fin_ledger_band",
+          "COLUMN_NAME": "bandID",
+          "REFERENCED_TABLE_NAME": "bands",
+          "REFERENCED_COLUMN_NAME": "bandID"
+        },
+        {
+          "CONSTRAINT_NAME": "fk_fin_ledger_date",
+          "COLUMN_NAME": "dateID",
+          "REFERENCED_TABLE_NAME": "dates",
+          "REFERENCED_COLUMN_NAME": "dateID"
+        },
+        {
+          "CONSTRAINT_NAME": "fk_fin_ledger_user",
+          "COLUMN_NAME": "targetUserID",
+          "REFERENCED_TABLE_NAME": "users",
+          "REFERENCED_COLUMN_NAME": "userID"
+        }
+      ]
+    },
+    "notifications": {
+      "columns": [
+        {
+          "COLUMN_NAME": "notificationID",
+          "DATA_TYPE": "int",
+          "COLUMN_TYPE": "int(11)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "PRI",
+          "EXTRA": "auto_increment"
+        },
+        {
+          "COLUMN_NAME": "userID",
+          "DATA_TYPE": "int",
+          "COLUMN_TYPE": "int(11)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "MUL",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "type",
+          "DATA_TYPE": "varchar",
+          "COLUMN_TYPE": "varchar(50)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "title",
+          "DATA_TYPE": "varchar",
+          "COLUMN_TYPE": "varchar(255)",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "NULL",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "body",
+          "DATA_TYPE": "text",
+          "COLUMN_TYPE": "text",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "NULL",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "payload",
+          "DATA_TYPE": "longtext",
+          "COLUMN_TYPE": "longtext",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "NULL",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "isRead",
+          "DATA_TYPE": "tinyint",
+          "COLUMN_TYPE": "tinyint(1)",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": "0",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "createdAt",
+          "DATA_TYPE": "datetime",
+          "COLUMN_TYPE": "datetime",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": "current_timestamp()",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        },
+        {
+          "COLUMN_NAME": "readAt",
+          "DATA_TYPE": "datetime",
+          "COLUMN_TYPE": "datetime",
+          "IS_NULLABLE": "YES",
+          "COLUMN_DEFAULT": "NULL",
+          "COLUMN_KEY": "",
+          "EXTRA": ""
+        }
+      ],
+      "indexes": [
+        {
+          "Table": "notifications",
+          "Non_unique": 0,
+          "Key_name": "PRIMARY",
+          "Seq_in_index": 1,
+          "Column_name": "notificationID",
+          "Collation": "A",
+          "Cardinality": 0,
+          "Sub_part": null,
+          "Packed": null,
+          "Null": "",
+          "Index_type": "BTREE",
+          "Comment": "",
+          "Index_comment": ""
+        },
+        {
+          "Table": "notifications",
+          "Non_unique": 1,
+          "Key_name": "idx_notifications_user",
+          "Seq_in_index": 1,
+          "Column_name": "userID",
+          "Collation": "A",
+          "Cardinality": 0,
+          "Sub_part": null,
+          "Packed": null,
+          "Null": "",
+          "Index_type": "BTREE",
+          "Comment": "",
+          "Index_comment": ""
+        }
+      ],
+      "foreignKeys": [
+        {
+          "CONSTRAINT_NAME": "fk_notifications_user",
+          "COLUMN_NAME": "userID",
+          "REFERENCED_TABLE_NAME": "users",
+          "REFERENCED_COLUMN_NAME": "userID"
+        }
+      ]
+    },
     "payments": {
       "columns": [
         {
@@ -632,8 +942,8 @@
           "COLUMN_NAME": "dateID",
           "DATA_TYPE": "int",
           "COLUMN_TYPE": "int(11)",
-          "IS_NULLABLE": "YES",
-          "COLUMN_DEFAULT": "NULL",
+          "IS_NULLABLE": "NO",
+          "COLUMN_DEFAULT": null,
           "COLUMN_KEY": "MUL",
           "EXTRA": ""
         },
@@ -700,7 +1010,7 @@
           "Seq_in_index": 1,
           "Column_name": "paymentID",
           "Collation": "A",
-          "Cardinality": 77,
+          "Cardinality": 13,
           "Sub_part": null,
           "Packed": null,
           "Null": "",
@@ -715,10 +1025,10 @@
           "Seq_in_index": 1,
           "Column_name": "dateID",
           "Collation": "A",
-          "Cardinality": 77,
+          "Cardinality": 13,
           "Sub_part": null,
           "Packed": null,
-          "Null": "YES",
+          "Null": "",
           "Index_type": "BTREE",
           "Comment": "",
           "Index_comment": ""

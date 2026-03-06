@@ -7,37 +7,37 @@
         {
           "id": "p1_task_review_tables",
           "label": "Review existing tables for gigs, bands, users, and dates (including current foreign keys and constraints).",
-          "done": false
+          "done": true
         },
         {
           "id": "p1_task_not_null_bandid",
           "label": "Add NOT NULL constraints to bandID and other critical foreign keys.",
-          "done": false
+          "done": true
         },
         {
           "id": "p1_task_create_ledger",
           "label": "Create finances_ledger table (ledgerID, dateID, category, label, targetUserID, amount, status).",
-          "done": false
+          "done": true
         },
         {
           "id": "p1_task_settlement_id",
           "label": "Add settlementID field for grouping rows by settlement version.",
-          "done": false
+          "done": true
         },
         {
           "id": "p1_task_timestamps",
           "label": "Add createdAt / updatedAt timestamps to finances_ledger.",
-          "done": false
+          "done": true
         },
         {
           "id": "p1_task_on_delete_restrict",
           "label": "Add ON DELETE RESTRICT constraints for all financial links.",
-          "done": false
+          "done": true
         },
         {
           "id": "p1_task_update_dates_timestamp",
           "label": "Ensure every write to finances_ledger also updates dates.dateUpdated.",
-          "done": false
+          "done": true
         },
         {
           "id": "p1_task_migrate_existing_data",
@@ -53,12 +53,12 @@
         {
           "id": "p2_task_read_gross",
           "label": "Implement service to read gross amount from dates.datePrice.",
-          "done": false
+          "done": true
         },
         {
           "id": "p2_task_aggregate_expenses",
           "label": "Implement service to aggregate expenses (category = expense) per date.",
-          "done": false
+          "done": true
         },
         {
           "id": "p2_task_compute_distribution",
@@ -68,17 +68,17 @@
         {
           "id": "p2_task_worksheet_crud",
           "label": "Create admin-only Worksheet API endpoints for CRUD on draft ledger line items.",
-          "done": false
+          "done": true
         },
         {
           "id": "p2_task_publish_settlement",
           "label": "Create endpoint to publish a settlement (assign / bump settlementID, set statuses).",
-          "done": false
+          "done": true
         },
         {
           "id": "p2_task_enforce_immutability_paid",
           "label": "Block edits/deletes for rows with status = \"paid\".",
-          "done": false
+          "done": true
         },
         {
           "id": "p2_task_adjustment_rows",
@@ -99,27 +99,27 @@
         {
           "id": "p3_task_line_item_editor",
           "label": "Build line-item editor UI for expenses and payouts in draft state.",
-          "done": false
+          "done": true
         },
         {
           "id": "p3_task_waterfall_ui",
           "label": "Show live Waterfall summary: Gross → Expenses → Net → Distribution.",
-          "done": false
+          "done": true
         },
         {
           "id": "p3_task_balance_indicator",
           "label": "Add balance indicator (Gross == Expenses + Payouts).",
-          "done": false
+          "done": true
         },
         {
           "id": "p3_task_save_drafts",
           "label": "Add action to save worksheet drafts.",
-          "done": false
+          "done": true
         },
         {
           "id": "p3_task_publish_ui",
           "label": "Add action to publish settlements from the UI.",
-          "done": false
+          "done": true
         },
         {
           "id": "p3_task_view_history",
@@ -135,32 +135,32 @@
         {
           "id": "p4_task_wallet_view",
           "label": "Build \"My Wallet\" / Valet page for logged-in members.",
-          "done": false
+          "done": true
         },
         {
           "id": "p4_task_list_member_gigs",
           "label": "List all gigs where targetUserID = current user.",
-          "done": false
+          "done": true
         },
         {
           "id": "p4_task_show_payout_status",
           "label": "Display per-gig payout amount and status (Owed, Pending, Paid).",
-          "done": false
+          "done": true
         },
         {
           "id": "p4_task_enforce_visibility",
           "label": "Hide gross gig price and other members' payouts from members.",
-          "done": false
+          "done": true
         },
         {
           "id": "p4_task_member_payout_logging_ui",
           "label": "Implement UI for members to record money they received via Valet.",
-          "done": false
+          "done": true
         },
         {
           "id": "p4_task_member_payout_logging_api",
           "label": "Add backend endpoint that writes member-initiated payout entries to finances_ledger.",
-          "done": false
+          "done": true
         }
       ]
     },
@@ -171,17 +171,17 @@
         {
           "id": "p5_task_member_settlement_notifications",
           "label": "Notify members when a relevant settlement is published.",
-          "done": false
+          "done": true
         },
         {
           "id": "p5_task_admin_member_payout_notifications",
           "label": "Send silent admin/owner notification when a member files a payout via Valet.",
-          "done": false
+          "done": true
         },
         {
           "id": "p5_task_admin_overview_dates",
           "label": "Build per-date admin overview of payouts, expenses, and settlements.",
-          "done": false
+          "done": true
         },
         {
           "id": "p5_task_admin_overview_members",
@@ -237,5 +237,5 @@
       ]
     }
   ],
-  "updatedAt": "2026-03-04T11:47:56.113Z"
+  "updatedAt": "2026-03-04T13:05:00.000Z"
 }

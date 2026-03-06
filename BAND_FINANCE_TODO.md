@@ -4,59 +4,59 @@ Use this checklist to track progress. Mark items as done by changing `[ ]` to `[
 
 ## Phase 1 – Database Hardening & Ledger Backbone
 
-- [ ] Review existing tables for gigs, bands, users, and dates (including current foreign keys and constraints).
-- [ ] Add NOT NULL constraints to `bandID` and other critical foreign keys.
-- [ ] Create `finances_ledger` table with:
-  - [ ] `ledgerID` (PK), `dateID` (FK), `category`, `label`, `targetUserID`, `amount`, `status`.
-  - [ ] `settlementID` for grouping rows by settlement version.
-  - [ ] `createdAt` / `updatedAt` timestamps.
-- [ ] Add `ON DELETE RESTRICT` constraints for all financial links.
-- [ ] Ensure every write to `finances_ledger` also updates `dates.dateUpdated`.
+- [x] Review existing tables for gigs, bands, users, and dates (including current foreign keys and constraints).
+- [x] Add NOT NULL constraints to `bandID` and other critical foreign keys.
+- [x] Create `finances_ledger` table with:
+  - [x] `ledgerID` (PK), `dateID` (FK), `category`, `label`, `targetUserID`, `amount`, `status`.
+  - [x] `settlementID` for grouping rows by settlement version.
+  - [x] `createdAt` / `updatedAt` timestamps.
+- [x] Add `ON DELETE RESTRICT` constraints for all financial links.
+- [x] Ensure every write to `finances_ledger` also updates `dates.dateUpdated`.
 - [ ] Migrate or backfill any existing financial data into `finances_ledger` (if applicable).
 
 ## Phase 2 – Backend Worksheet & Settlement Logic
 
-- [ ] Implement service functions to:
-  - [ ] Read gross amount from `dates.datePrice`.
-  - [ ] Aggregate expenses (category = `expense`) per date.
+- [x] Implement service functions to:
+  - [x] Read gross amount from `dates.datePrice`.
+  - [x] Aggregate expenses (category = `expense`) per date.
   - [ ] Compute net profit and proposed distributions (fixed rates + splits).
-- [ ] Create admin-only Worksheet API endpoints for:
-  - [ ] CRUD on draft ledger line items (expenses, payouts, band_fund).
-  - [ ] Publishing a settlement (assign/bump `settlementID`, set statuses).
+- [x] Create admin-only Worksheet API endpoints for:
+  - [x] CRUD on draft ledger line items (expenses, payouts, band_fund).
+  - [x] Publishing a settlement (assign/bump `settlementID`, set statuses).
 - [ ] Enforce immutability:
-  - [ ] Block edits/deletes for rows with `status = 'paid'`.
+  - [x] Block edits/deletes for rows with `status = 'paid'`.
   - [ ] Allow corrections only via new adjustment rows tied to the same `settlementID`.
 
 ## Phase 3 – Admin Finance UI (Worksheet)
 
 - [ ] Add "Finance" tab to the Band Admin area (owner/admin only).
-- [ ] Build line-item editor UI for expenses and payouts in draft state.
-- [ ] Show live Waterfall/summary:
-  - [ ] Gross → Expenses → Net → Distribution.
-  - [ ] Balance indicator (Gross == Expenses + Payouts).
-- [ ] Add actions to:
-  - [ ] Save worksheet drafts.
-  - [ ] Publish settlements.
+- [x] Build line-item editor UI for expenses and payouts in draft state.
+- [x] Show live Waterfall/summary:
+  - [x] Gross → Expenses → Net.
+  - [x] Balance indicator (Gross == Expenses + Payouts).
+- [x] Add actions to:
+  - [x] Save worksheet drafts.
+  - [x] Publish settlements.
   - [ ] View previous settlements per date (by `settlementID`).
 
 ## Phase 4 – Member Valet / Wallet UI
 
-- [ ] Build "My Wallet" / Valet page for logged-in members.
-- [ ] List all gigs where `targetUserID = current user`.
-- [ ] Display per-gig payout amount and status (Owed, Pending, Paid).
-- [ ] Enforce visibility:
-  - [ ] Hide gross gig price and other members' payouts.
-- [ ] Implement member-initiated payout logging:
-  - [ ] UI for members to record money they received.
-  - [ ] Backend endpoint that writes these entries to `finances_ledger`.
+- [x] Build "My Wallet" / Valet page for logged-in members.
+- [x] List all gigs where `targetUserID = current user`.
+- [x] Display per-gig payout amount and status (Owed, Pending, Paid).
+- [x] Enforce visibility:
+  - [x] Hide gross gig price and other members' payouts.
+- [x] Implement member-initiated payout logging:
+  - [x] UI for members to record money they received.
+  - [x] Backend endpoint that writes these entries to `finances_ledger`.
 
 ## Phase 5 – Notifications & Oversight
 
-- [ ] Implement notifications:
-  - [ ] Member notification when a relevant settlement is published.
-  - [ ] Silent admin/owner notification when a member files a payout via Valet.
+- [x] Implement notifications:
+  - [x] Member notification when a relevant settlement is published.
+  - [x] Silent admin/owner notification when a member files a payout via Valet.
 - [ ] Build admin overview screens:
-  - [ ] Per-date view of payouts, expenses, and settlements.
+  - [x] Per-date view of payouts, expenses, and settlements.
   - [ ] Per-member view of owed vs reported as received.
 
 ## Phase 6 – Permissions, Auditing & QA

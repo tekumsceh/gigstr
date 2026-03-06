@@ -5,6 +5,7 @@ import Login from './components/Login';
 import HomeView from './views/HomeView';
 import AddDateView from './views/AddDateView';
 import ValetView from './views/ValetView';
+import MyWalletView from './views/MyWalletView';
 import DateDetailView from './views/DateDetailView';
 import CreateBandView from './views/CreateBandView';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -13,6 +14,7 @@ import GlobalFooter from './components/layouts/GlobalFooter';
 import QuickActionFAB from './components/QuickActionFAB';
 import SettingsView from './views/SettingsView';
 import FinanceTodoView from './views/FinanceTodoView';
+import FinanceWorksheetView from './views/FinanceWorksheetView';
 import BandManagementView from './views/BandManagementView';
 
 function AppContent() {
@@ -33,6 +35,7 @@ function AppContent() {
             <Route path="/" element={<ProtectedRoute><HomeView /></ProtectedRoute>} />
             <Route path="/add" element={<ProtectedRoute><AddDateView /></ProtectedRoute>} />
             <Route path="/valet" element={<ProtectedRoute><ValetView /></ProtectedRoute>} />
+            <Route path="/wallet" element={<ProtectedRoute><MyWalletView /></ProtectedRoute>} />
             <Route path="/date/:id" element={<ProtectedRoute><DateDetailView /></ProtectedRoute>} />
             <Route path="/create-band" element={<ProtectedRoute><CreateBandView /></ProtectedRoute>} />
             <Route path="/band/:id/manage" element={<BandManagementView />} />
@@ -42,6 +45,14 @@ function AppContent() {
               element={
                 <ProtectedRoute requiredRole="GOD">
                   <FinanceTodoView />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/date/:id/finance"
+              element={
+                <ProtectedRoute requiredRole="GOD">
+                  <FinanceWorksheetView />
                 </ProtectedRoute>
               }
             />
