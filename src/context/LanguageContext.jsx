@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect, useContext, useMemo } from 'react';
+import axios from 'axios';
 import { getMessages, DEFAULT_LOCALE, LOCALES } from '../translations';
 
 const STORAGE_KEY = 'gigstr-locale';
@@ -25,7 +26,14 @@ function getStoredLocale() {
   return getDeviceLocale();
 }
 
-function tFromMessages(messages, key, params = {}) {
+function tFromMessages(messages, overrides, key, params = {}) {
+  if (overrides && typeof overrides[key] === 'string') {
+    let str = overrides[key];
+    Object.keys(params).forEach((k) => {
+      str = str.replace(new RegExp(`\\{${k}\\}`, 'g'), String(params[k]));
+    });
+    return str;
+  }
   const parts = key.split('.');
   let value = messages;
   for (const part of parts) {
@@ -40,6 +48,7 @@ function tFromMessages(messages, key, params = {}) {
 
 export const LanguageProvider = ({ children }) => {
   const [locale, setLocaleState] = useState(getStoredLocale);
+  const [overrides, setOverrides] = useState({});
 
   useEffect(() => {
     try {
@@ -48,13 +57,38 @@ export const LanguageProvider = ({ children }) => {
     } catch (_) {}
   }, [locale]);
 
+  useEffect(() => {
+    if (locale === 'en') {
+      setOverrides({});
+      return;
+    }
+    let cancelled = false;
+    axios
+      .get('/api/translate/overrides', { params: { lang: locale }, withCredentials: true })
+      .then((res) => {
+        if (cancelled) return;
+        const map = {};
+        (res.data?.list ?? []).forEach((o) => {
+          map[o.key] = o.value ?? '';
+        });
+        setOverrides(map);
+      })
+      .catch(() => {
+        if (!cancelled) setOverrides({});
+      });
+    return () => { cancelled = true; };
+  }, [locale]);
+
   const setLocale = (code) => {
     if (LOCALES.some((l) => l.code === code)) setLocaleState(code);
   };
 
   const messages = useMemo(() => getMessages(locale), [locale]);
 
-  const t = useMemo(() => (key, params) => tFromMessages(messages, key, params), [messages]);
+  const t = useMemo(
+    () => (key, params) => tFromMessages(messages, overrides, key, params),
+    [messages, overrides]
+  );
 
   const value = useMemo(
     () => ({ locale, setLocale, t, locales: LOCALES, messages }),

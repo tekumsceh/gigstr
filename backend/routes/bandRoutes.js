@@ -1,5 +1,6 @@
 const express = require('express');
 const db = require('../config/db');
+const financeClient = require('../services/financeClient');
 const router = express.Router();
 
 // Middleware to check if the user is authenticated.
@@ -91,10 +92,9 @@ router.get("/api/dashboard-data", isAuthenticated, async (req, res) => {
                 t1.dateID, 
                 DATE_FORMAT(t1.dateDate, '%Y-%m-%d') as dateDate, 
                 v.venueName as dateVenue, v.venueCity as dateCity, v.venueCountry as dateCountry,
-                t1.datePrice, t1.dateDescription,
+                t1.dateDescription,
                 b.bandID, b.bandName, b.bandColor, 
-                s.statusName, s.statusColor,
-                COALESCE((SELECT SUM(amountEUR) FROM payments WHERE dateID = t1.dateID), 0) AS datePaidAmount
+                s.statusName, s.statusColor
             FROM dates t1
             LEFT JOIN venues v ON t1.venueID = v.venueID
             LEFT JOIN bands b ON t1.bandID = b.bandID
@@ -120,16 +120,33 @@ router.get("/api/dashboard-data", isAuthenticated, async (req, res) => {
             WHERE bm.userID = ? AND bm.status = 'pending'
         `;
 
-        // Run all three queries simultaneously for maximum speed
-        // Notice the exact matching of [userId, userId, userId] arrays
         const [dates, bands, invites] = await Promise.all([
             db.query(datesSql, [userId, userId, userId]),
             db.query(bandsSql, [userId, userId, userId]),
             db.query(invitesSql, [userId])
         ]);
 
+        let calendarDates = dates[0];
+        if (calendarDates.length > 0) {
+            if (!financeClient.enabled()) {
+                return res.status(503).json({ error: 'Finance service is required.' });
+            }
+            try {
+                const summary = await financeClient.summaryForDates(calendarDates.map((d) => d.dateID));
+                calendarDates = calendarDates.map((d) => {
+                    const s = summary[d.dateID];
+                    return s
+                        ? { ...d, datePrice: s.gross, datePaidAmount: s.totalPaid, dateCurrency: s.currency || 'EUR' }
+                        : d;
+                });
+            } catch (err) {
+                console.error('Dashboard finance summary error', err);
+                return res.status(503).json({ error: err.message || 'Finance service unavailable.' });
+            }
+        }
+
         res.json({
-            calendarDates: dates[0],
+            calendarDates,
             bands: bands[0],
             invites: invites[0]
         });
@@ -199,6 +216,104 @@ router.get('/api/bands/:id', isAuthenticated, async (req, res) => {
     } catch (err) {
         console.error("Error fetching band details:", err);
         res.status(500).json({ error: "Server error" });
+    }
+});
+
+// --- Band Admin (owner/admin only) ---
+// Debug: GET /api/band-admin-ping → 200 if this file has the new admin routes (remove in prod if desired)
+router.get('/api/band-admin-ping', (req, res) => res.json({ ok: true, message: 'Band admin routes loaded' }));
+
+const isBandAdmin = async (req, res, next) => {
+    if (!req.isAuthenticated || !req.isAuthenticated()) {
+        return res.status(401).json({ error: 'You must be logged in.' });
+    }
+    const userId = req.user.userID || req.user.id;
+    const bandID = req.params.bandID;
+    if (!bandID) return res.status(400).json({ error: 'Band ID required.' });
+    try {
+        const [rows] = await db.query(
+            'SELECT role FROM band_members WHERE bandID = ? AND userID = ? AND status = ?',
+            [bandID, userId, 'active']
+        );
+        const role = rows[0]?.role;
+        if (!rows.length || (role !== 'owner' && role !== 'admin')) {
+            return res.status(403).json({ error: 'Only band owners and admins can access this area.' });
+        }
+        next();
+    } catch (err) {
+        console.error('isBandAdmin error', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+// GET /api/band/:bandID/admin/dates – list dates for this band with finance summary (admin/owner only)
+router.get('/api/band/:bandID/admin/dates', isAuthenticated, isBandAdmin, async (req, res) => {
+    const { bandID } = req.params;
+    if (!financeClient.enabled()) {
+        return res.status(503).json({ error: 'Finance service is required.' });
+    }
+    try {
+        const [dates] = await db.query(
+            `SELECT d.dateID, d.dateDate, d.bandID, d.venueID, d.dateStatus, d.dateDescription,
+             DATE_FORMAT(d.dateDate, '%Y-%m-%d') AS dateDateFormatted,
+             v.venueName AS dateVenue, v.venueCity AS dateCity, v.venueCountry AS dateCountry,
+             b.bandName, b.bandColor, s.statusName, s.statusColor
+             FROM dates d
+             LEFT JOIN venues v ON d.venueID = v.venueID
+             LEFT JOIN bands b ON d.bandID = b.bandID
+             LEFT JOIN status s ON d.dateStatus = s.statusID
+             WHERE d.bandID = ?
+             ORDER BY d.dateDate DESC`,
+            [bandID]
+        );
+        if (dates.length === 0) return res.json([]);
+        const summary = await financeClient.summaryForDates(dates.map((d) => d.dateID));
+        const result = dates.map((d) => {
+            const s = summary[d.dateID];
+            return {
+                ...d,
+                gross: s?.gross ?? 0,
+                totalPaid: s?.totalPaid ?? 0,
+                totalExpenses: s?.totalExpenses ?? 0,
+                totalPayouts: s?.totalPayouts ?? 0,
+                currency: s?.currency ?? 'EUR'
+            };
+        });
+        res.json(result);
+    } catch (err) {
+        console.error('Band admin dates error', err);
+        res.status(err.status === 503 ? 503 : 500).json({ error: err.message || 'Failed to load dates' });
+    }
+});
+
+// GET /api/band/:bandID/admin/worksheet/:dateID – full worksheet for one date (admin/owner only, date must belong to band)
+router.get('/api/band/:bandID/admin/worksheet/:dateID', isAuthenticated, isBandAdmin, async (req, res) => {
+    const { bandID, dateID } = req.params;
+    if (!financeClient.enabled()) {
+        return res.status(503).json({ error: 'Finance service is required.' });
+    }
+    try {
+        const [dateRows] = await db.query(
+            'SELECT dateID, bandID, venueID FROM dates WHERE dateID = ?',
+            [dateID]
+        );
+        if (dateRows.length === 0) return res.status(404).json({ error: 'Gig not found.' });
+        if (Number(dateRows[0].bandID) !== Number(bandID)) {
+            return res.status(403).json({ error: 'This gig does not belong to this band.' });
+        }
+        const data = await financeClient.getWorksheet(dateID);
+        if (data.date?.venueID) {
+            const [v] = await db.query('SELECT venueName, venueCity, venueCountry FROM venues WHERE venueID = ?', [data.date.venueID]);
+            if (v?.length) Object.assign(data.date, { venueName: v[0].venueName, venueCity: v[0].venueCity, venueCountry: v[0].venueCountry });
+        }
+        if (data.date?.bandID) {
+            const [b] = await db.query('SELECT bandName, bandColor FROM bands WHERE bandID = ?', [data.date.bandID]);
+            if (b?.length) Object.assign(data.date, { bandName: b[0].bandName, bandColor: b[0].bandColor });
+        }
+        return res.json(data);
+    } catch (err) {
+        console.error('Band admin worksheet error', err);
+        res.status(err.status || 500).json({ error: err.message || 'Failed to load worksheet' });
     }
 });
 

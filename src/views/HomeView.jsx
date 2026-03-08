@@ -19,8 +19,10 @@ function HomeView() {
   const [noteModal, setNoteModal] = useState({ isOpen: false, content: '' });
   const [activeFilters, setActiveFilters] = useState({ year: 'all', bandID: 'all' });
   const [viewMode, setViewMode] = useState('list');
-  const listLimit = 3;
-  const gridLimit = 12;
+  const [showLimit, setShowLimit] = useState(20);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const PAGE_SIZE = 40;
 
   const filterOptions = useMemo(() => {
     const today = new Date();
@@ -45,23 +47,37 @@ function HomeView() {
     return { years, bandID: bandOptions };
   }, [rawData, bands]);
 
-  const upcomingGigs = useMemo(() => {
+  const fullUpcomingGigs = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
     return rawData
       .filter(gig => {
         const gigDate = new Date(gig.dateDate);
         if (gigDate < today) return false;
-        
         const matchesYear = activeFilters.year === 'all' || gigDate.getFullYear().toString() === activeFilters.year;
         const matchesBand = activeFilters.bandID === 'all' || String(gig.bandID) === activeFilters.bandID;
-        
         return matchesYear && matchesBand;
       })
-      .sort((a,b) => new Date(a.dateDate) - new Date(b.dateDate))
-      .slice(0, viewMode === 'list' ? listLimit : gridLimit);
-  }, [rawData, activeFilters, viewMode]);
+      .sort((a, b) => new Date(a.dateDate) - new Date(b.dateDate));
+  }, [rawData, activeFilters]);
+
+  const totalPages = useMemo(() => {
+    if (showLimit === 'all') return Math.max(1, Math.ceil(fullUpcomingGigs.length / PAGE_SIZE));
+    return 1;
+  }, [showLimit, fullUpcomingGigs.length]);
+
+  const upcomingGigs = useMemo(() => {
+    if (showLimit === 'all') {
+      const start = (currentPage - 1) * PAGE_SIZE;
+      return fullUpcomingGigs.slice(start, start + PAGE_SIZE);
+    }
+    const limit = typeof showLimit === 'number' ? showLimit : 20;
+    return fullUpcomingGigs.slice(0, limit);
+  }, [fullUpcomingGigs, showLimit, currentPage]);
+
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [activeFilters.year, activeFilters.bandID, showLimit]);
 
   // STABILIZED FUNCTIONS
   const handleInvite = useCallback(async (bandID, response) => {
@@ -78,7 +94,7 @@ function HomeView() {
   }, []);
 
   const handleSelectDate = useCallback((dayGigs, dateObj) => {
-    if (dayGigs.length === 1) {
+    if (dayGigs.length >= 1) {
       navigate(`/date/${dayGigs[0].dateID}`);
     } else {
       const formattedDate = dateObj.toLocaleDateString('en-CA');
@@ -98,9 +114,11 @@ function HomeView() {
               onFilterChange={setActiveFilters}
               viewMode={viewMode}
               onViewChange={setViewMode}
+              showLimit={showLimit}
+              onLimitChange={setShowLimit}
               yearLabel={t('home.year')}
               bandLabel={t('home.band')}
-              showRowLimit={false}
+              showRowLimit={true}
             />
             <Listings 
               title=""
@@ -112,6 +130,31 @@ function HomeView() {
               hideHeader={true}
               viewMode={viewMode}
             />
+            {showLimit === 'all' && totalPages > 1 && (
+              <div className="flex items-center justify-between px-4 py-2 border-t border-slate-800 bg-slate-900/30">
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                  {t('filtering.page')} {currentPage} {t('filtering.of')} {totalPages}
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    disabled={currentPage <= 1}
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    className="text-[10px] font-black uppercase px-2 py-1 rounded border border-slate-600 text-slate-400 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800"
+                  >
+                    {t('filtering.prev')}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={currentPage >= totalPages}
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    className="text-[10px] font-black uppercase px-2 py-1 rounded border border-slate-600 text-slate-400 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800"
+                  >
+                    {t('filtering.next')}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         }
         sideContent={

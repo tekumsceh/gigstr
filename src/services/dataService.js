@@ -62,19 +62,3 @@ export const deleteFromApi = async (endpoint) => {
     throw new Error(errorMsg);
   }
 };
-
-/**
- * SMART FETCHER - No changes needed here, as it uses the universal fetcher
- */
-export const fetchTableData = async (tableName, columns = [], filters = {}) => {
-  let endpoint = `/${tableName}`;
-  
-  if (tableName === 'status') endpoint = '/api/statuses';
-  if (tableName === 'bands') endpoint = '/api/my-bands'; // Change 'type' to 'bands'
-  if (tableName === 'dates') endpoint = '/api/dates';
-
-  const params = { ...filters };
-  if (columns.length > 0) params.cols = columns.join(',');
-
-  return await fetchFromApi(endpoint, params);
-};

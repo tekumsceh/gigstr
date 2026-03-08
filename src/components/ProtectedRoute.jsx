@@ -1,7 +1,7 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const ProtectedRoute = ({ children, requiredRole }) => {
+const ProtectedRoute = ({ children, requiredRole, allowedRoles }) => {
     const { user, loading } = useAuth();
 
     // 1. While we are asking the server "Who is this?", show nothing or a spinner
@@ -12,8 +12,11 @@ const ProtectedRoute = ({ children, requiredRole }) => {
         return <Navigate to="/login" replace />;
     }
 
-    // 3. Optional: If a specific role (like GOD) is required and they don't have it
+    // 3. Optional: role check — either requiredRole (single) or allowedRoles (array)
     if (requiredRole && user.role !== requiredRole) {
+        return <Navigate to="/" replace />;
+    }
+    if (allowedRoles && Array.isArray(allowedRoles) && !allowedRoles.includes(user.role)) {
         return <Navigate to="/" replace />;
     }
 

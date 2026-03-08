@@ -8,6 +8,7 @@ const isAuthenticated = (req, res, next) => {
 };
 const db = require('../config/db');
 const { findOrCreateVenue } = require('../utils/venueUtil');
+const financeClient = require('../services/financeClient');
 
 // --- CUSTOM SECURITY MIDDLEWARE ---
 const isGod = (req, res, next) => {
@@ -16,23 +17,44 @@ const isGod = (req, res, next) => {
     next(); 
 };
 
-router.get("/api/dates", async (req, res) => {
-    const { timeline, status, paid, year } = req.query;
+router.get("/api/dates/filter-options", async (req, res) => {
     try {
-        let sql = `
-            SELECT 
-                t1.*, 
-                v.venueName as dateVenue, v.venueCity as dateCity, v.venueCountry as dateCountry,
-                DATE_FORMAT(t1.dateDate, '%Y-%m-%d') as dateDate, 
-                b.bandName, b.bandColor, 
-                t3.statusName, t3.statusColor,
-                COALESCE(SUM(p.amountEUR), 0) AS datePaidAmount
-            FROM dates t1
-            LEFT JOIN venues v ON t1.venueID = v.venueID
-            LEFT JOIN bands b ON t1.bandID = b.bandID
-            LEFT JOIN status t3 ON t1.dateStatus = t3.statusID
-            LEFT JOIN payments p ON t1.dateID = p.dateID
-        `;
+        const [yearRows] = await db.query(
+            'SELECT DISTINCT YEAR(dateDate) AS year FROM dates ORDER BY year DESC'
+        );
+        const [bandRows] = await db.query(
+            `SELECT DISTINCT b.bandID, b.bandName FROM dates d JOIN bands b ON d.bandID = b.bandID ORDER BY b.bandName ASC`
+        );
+        const [statusRows] = await db.query(
+            'SELECT statusID, statusName FROM status ORDER BY statusName ASC'
+        );
+        res.json({
+            years: yearRows.map((r) => String(r.year)),
+            bandID: bandRows.map((r) => ({ bandID: r.bandID, bandName: r.bandName || '—' })),
+            statuses: statusRows.map((r) => ({ statusID: r.statusID, statusName: r.statusName || '—' }))
+        });
+    } catch (err) {
+        console.error("Filter options error:", err);
+        res.status(500).json({ error: "Failed to fetch filter options" });
+    }
+});
+
+function escapeLike(str) {
+    if (typeof str !== 'string') return '';
+    return str.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
+}
+
+router.get("/api/dates", async (req, res) => {
+    const { timeline, status, paid, year, bandID, limit: limitParam, offset: offsetParam, search: searchParam, order: orderParam } = req.query;
+    const usePagination = limitParam != null && limitParam !== '' && !isNaN(Number(limitParam));
+    const limit = usePagination ? Math.min(40, Math.max(1, parseInt(limitParam, 10))) : null;
+    const offset = usePagination && offsetParam != null && offsetParam !== '' ? Math.max(0, parseInt(offsetParam, 10)) : 0;
+    const searchRaw = typeof searchParam === 'string' && searchParam.trim() ? searchParam.trim() : null;
+    const search = searchRaw ? escapeLike(searchRaw) : null;
+    const orderRaw = typeof orderParam === 'string' ? orderParam.trim().toLowerCase() : '';
+    const orderDir = orderRaw === 'desc' ? 'DESC' : 'ASC';
+
+    try {
         let whereClauses = [];
         let queryValues = [];
         if (status && status !== 'all') {
@@ -43,19 +65,78 @@ router.get("/api/dates", async (req, res) => {
             whereClauses.push(`YEAR(t1.dateDate) = ?`);
             queryValues.push(year);
         }
+        if (bandID && bandID !== 'all') {
+            whereClauses.push(`t1.bandID = ?`);
+            queryValues.push(bandID);
+        }
         if (timeline === 'upcoming') {
             whereClauses.push(`t1.dateDate >= CURDATE()`);
         } else if (timeline === 'past') {
             whereClauses.push(`t1.dateDate < CURDATE()`);
         }
-        if (whereClauses.length > 0) {
-            sql += ` WHERE ` + whereClauses.join(" AND ");
+        if (search) {
+            const like = `%${search}%`;
+            const searchConditions = [
+                'COALESCE(v.venueName, "") LIKE ?', 'COALESCE(v.venueCity, "") LIKE ?', 'COALESCE(v.venueCountry, "") LIKE ?',
+                'COALESCE(b.bandName, "") LIKE ?', 'COALESCE(t3.statusName, "") LIKE ?', 'COALESCE(t1.dateDescription, "") LIKE ?',
+                'COALESCE(t1.dateCategory, "") LIKE ?', 'COALESCE(t1.dateContactOrganizer, "") LIKE ?', 'COALESCE(t1.dateContactTech, "") LIKE ?'
+            ];
+            whereClauses.push(`(${searchConditions.join(' OR ')})`);
+            for (let i = 0; i < searchConditions.length; i++) queryValues.push(like);
         }
-        sql += ` GROUP BY t1.dateID ORDER BY t1.dateDate ASC`;
+        const joins = ` LEFT JOIN venues v ON t1.venueID = v.venueID LEFT JOIN bands b ON t1.bandID = b.bandID LEFT JOIN status t3 ON t1.dateStatus = t3.statusID`;
+        const whereSql = whereClauses.length > 0 ? ` WHERE ` + whereClauses.join(" AND ") : '';
+
+        let total = null;
+        if (usePagination) {
+            const countSql = `SELECT COUNT(*) AS total FROM dates t1 ${joins} ${whereSql}`;
+            const [countRows] = await db.query(countSql, queryValues);
+            total = countRows[0]?.total ?? 0;
+        }
+
+        let sql = `
+            SELECT 
+                t1.dateID, t1.dateDate, t1.bandID, t1.venueID, t1.dateStatus, t1.dateDescription,
+                t1.dateStart, t1.dateLoadin, t1.dateSoundcheck, t1.dateDoors, t1.dateCurfew,
+                t1.dateCategory, t1.dateContactOrganizer, t1.dateContactTech, t1.dateOwner,
+                v.venueName as dateVenue, v.venueCity as dateCity, v.venueCountry as dateCountry,
+                DATE_FORMAT(t1.dateDate, '%Y-%m-%d') as dateDate,
+                b.bandName, b.bandColor,
+                t3.statusName, t3.statusColor
+            FROM dates t1
+            LEFT JOIN venues v ON t1.venueID = v.venueID
+            LEFT JOIN bands b ON t1.bandID = b.bandID
+            LEFT JOIN status t3 ON t1.dateStatus = t3.statusID
+            ${whereSql}
+            ORDER BY t1.dateDate ${orderDir}
+        `;
+        if (limit != null) {
+            sql += ` LIMIT ? OFFSET ?`;
+            queryValues.push(limit, offset);
+        }
         const [results] = await db.query(sql, queryValues);
+        if (results.length > 0 && !financeClient.enabled()) {
+            return res.status(503).json({ error: 'Finance service is required.' });
+        }
         let finalData = results;
-        if (paid === 'paid') finalData = results.filter(r => parseFloat(r.datePaidAmount) >= parseFloat(r.datePrice));
-        else if (paid === 'unpaid') finalData = results.filter(r => parseFloat(r.datePaidAmount) < parseFloat(r.datePrice));
+        if (results.length > 0) {
+            try {
+                const summary = await financeClient.summaryForDates(results.map((r) => r.dateID));
+                finalData = results.map((r) => {
+                    const s = summary[r.dateID];
+                    return s ? { ...r, datePrice: s.gross, datePaidAmount: s.totalPaid, dateCurrency: s.currency || 'EUR' } : r;
+                });
+            } catch (err) {
+                console.error('Dates GET finance summary error', err);
+                return res.status(503).json({ error: err.message || 'Finance service unavailable.' });
+            }
+        }
+        if (paid === 'paid') finalData = finalData.filter(r => parseFloat(r.datePaidAmount || 0) >= parseFloat(r.datePrice || 0));
+        else if (paid === 'unpaid') finalData = finalData.filter(r => parseFloat(r.datePaidAmount || 0) < parseFloat(r.datePrice || 0));
+
+        if (usePagination && total !== null) {
+            return res.json({ dates: finalData, total });
+        }
         res.json(finalData);
     } catch (err) {
         console.error("Dates GET Error:", err);
@@ -89,10 +170,14 @@ router.get("/api/check-conflict", async (req, res) => {
 // 1. Change 'isGod' to 'isAuthenticated' (or your standard login check)
 router.post("/api/add-date", isAuthenticated, async (req, res) => {
     const d = req.body;
-    const dateOwner = req.user.userID; // Ensure this matches your passport user object (userID vs id)
-    
+    const dateOwner = req.user.userID || req.user.id;
+    if (!dateOwner) {
+        return res.status(401).json({ error: "Not authenticated." });
+    }
+    if (!d.bandID) {
+        return res.status(400).json({ error: "Band is required." });
+    }
     try {
-        // --- AUTHENTICATION CHECK ---
         const [membership] = await db.query(
             "SELECT role FROM band_members WHERE bandID = ? AND userID = ?",
             [d.bandID, dateOwner]
@@ -100,17 +185,15 @@ router.post("/api/add-date", isAuthenticated, async (req, res) => {
 
         if (membership.length === 0) {
             return res.status(403).json({ 
-                error: "Forbidden: You are not a member of this band." 
+                error: "You are not a member of this band." 
             });
         }
         // ----------------------------
 
-        const venueID = await findOrCreateVenue(
-            d.dateVenue,
-            d.dateCity,
-            d.dateCountry,
-            d.dateVenueAddress || null
-        );
+        const hasVenue = d.dateVenue && String(d.dateVenue).trim();
+        const venueID = hasVenue
+            ? await findOrCreateVenue(d.dateVenue.trim(), d.dateCity || '', d.dateCountry || '', d.dateVenueAddress || null)
+            : null;
 
         const sql = `
             INSERT INTO dates 
@@ -118,15 +201,15 @@ router.post("/api/add-date", isAuthenticated, async (req, res) => {
              dateCurrency, dateStart, dateLoadin, dateSoundcheck, dateDoors, 
              dateCurfew, dateCategory, dateContactOrganizer, dateContactTech,
              dateDescription, dateStatus, dateOwner) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
-        
+        const useFinanceOnly = financeClient.enabled();
         const values = [
             d.dateDate, 
             d.bandID, 
             venueID,
-            d.datePrice || 0, 
-            d.dateCurrency, 
+            useFinanceOnly ? 0 : (d.datePrice || 0), 
+            useFinanceOnly ? 'EUR' : (d.dateCurrency || 'EUR'), 
             d.dateStart || null, 
             d.dateLoadin || null,
             d.dateSoundcheck || null, 
@@ -141,7 +224,16 @@ router.post("/api/add-date", isAuthenticated, async (req, res) => {
         ];
 
         const [result] = await db.query(sql, values);
-        res.json({ success: true, insertId: result.insertId });
+        const insertId = result.insertId;
+
+        console.log('Add-date success:', { dateID: insertId, bandID: d.bandID, dateDate: d.dateDate });
+
+        if (financeClient.enabled()) {
+          financeClient.dateCreated(insertId, d.bandID, d.dateDate, venueID, d.datePrice ?? null, d.dateCurrency ?? null)
+            .catch((err) => console.error('Finance date-created sync failed (date already saved in Gigstr):', err.message));
+        }
+
+        res.json({ success: true, insertId });
 
     } catch (err) {
         console.error("Add Error:", err);
@@ -160,10 +252,9 @@ router.get("/api/calendar-dates", async (req, res) => {
                 t1.dateID, 
                 DATE_FORMAT(t1.dateDate, '%Y-%m-%d') as dateDate, 
                 v.venueName as dateVenue, v.venueCity as dateCity, v.venueCountry as dateCountry,
-                t1.datePrice, t1.dateDescription,
+                t1.dateDescription,
                 b.bandName, b.bandColor, 
-                s.statusName, s.statusColor,
-                (SELECT COALESCE(SUM(amountEUR), 0) FROM payments WHERE dateID = t1.dateID) AS datePaidAmount
+                s.statusName, s.statusColor
             FROM dates t1
             LEFT JOIN venues v ON t1.venueID = v.venueID
             LEFT JOIN bands b ON t1.bandID = b.bandID
@@ -175,8 +266,23 @@ router.get("/api/calendar-dates", async (req, res) => {
         `;
 
         const [results] = await db.query(sql, [userId]);
-        console.log(`Successfully fetched ${results.length} rows for user ${userId}`);
-        res.json(results);
+        if (results.length > 0 && !financeClient.enabled()) {
+            return res.status(503).json({ error: 'Finance service is required.' });
+        }
+        let calendarResults = results;
+        if (results.length > 0) {
+            try {
+                const summary = await financeClient.summaryForDates(results.map((r) => r.dateID));
+                calendarResults = results.map((r) => {
+                    const s = summary[r.dateID];
+                    return s ? { ...r, datePrice: s.gross, datePaidAmount: s.totalPaid, dateCurrency: s.currency || 'EUR' } : r;
+                });
+            } catch (err) {
+                console.error('Calendar-dates finance summary error', err);
+                return res.status(503).json({ error: err.message || 'Finance service unavailable.' });
+            }
+        }
+        res.json(calendarResults);
     } catch (err) {
         console.error("CALENDAR ROUTE CRASH:", err);
         res.status(500).json({ error: err.message });
@@ -187,13 +293,25 @@ router.post("/api/update-date/:id", isGod, async (req, res) => {
   const { id } = req.params;
   const d = req.body;
   try {
-      const venueID = await findOrCreateVenue(
-        d.dateVenue,
-        d.dateCity,
-        d.dateCountry,
-        d.dateVenueAddress || null
-      );
+    const [dateRows] = await db.query("SELECT dateDate FROM dates WHERE dateID = ?", [id]);
+    if (dateRows.length === 0) return res.status(404).json({ error: "Gig not found" });
+    if (isPastDate(dateRows[0].dateDate)) {
+      return res.status(400).json({ error: "Past dates cannot be edited." });
+    }
+    const hasVenue = d.dateVenue && String(d.dateVenue).trim();
+      const venueID = hasVenue
+        ? await findOrCreateVenue(d.dateVenue.trim(), d.dateCity || '', d.dateCountry || '', d.dateVenueAddress || null)
+        : null;
 
+      if (financeClient.enabled() && (d.datePrice != null || d.dateCurrency != null)) {
+        try {
+          await financeClient.setRevenue(id, d.bandID, d.datePrice ?? 0, d.dateCurrency ?? 'EUR');
+        } catch (err) {
+          console.error('Update-date setRevenue error', err);
+        }
+      }
+
+      const useFinanceOnly = financeClient.enabled();
       const sql = `
         UPDATE dates SET 
           dateDate = ?, bandID = ?, venueID = ?, datePrice = ?, dateCurrency = ?, dateStart = ?, 
@@ -203,7 +321,7 @@ router.post("/api/update-date/:id", isGod, async (req, res) => {
         WHERE dateID = ?
       `;
       const values = [
-        d.dateDate, d.bandID, venueID, d.datePrice, d.dateCurrency, d.dateStart || null, 
+        d.dateDate, d.bandID, venueID, useFinanceOnly ? 0 : (d.datePrice ?? 0), useFinanceOnly ? 'EUR' : (d.dateCurrency ?? 'EUR'), d.dateStart || null, 
         d.dateLoadin || null, d.dateSoundcheck || null, d.dateDoors || null, d.dateCurfew || null,
         d.dateCategory || null, d.dateContactOrganizer || null, d.dateContactTech || null,
         d.dateDescription || null, d.dateStatus, id
@@ -216,18 +334,42 @@ router.post("/api/update-date/:id", isGod, async (req, res) => {
 }
 });
 
+function isPastDate(dateStr) {
+  if (!dateStr) return false;
+  const d = new Date(String(dateStr).substring(0, 10));
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  d.setHours(0, 0, 0, 0);
+  return d < today;
+}
+
 router.delete("/api/delete-date/:id", isGod, async (req, res) => {
   const { id } = req.params;
   try {
-      console.log("Attempting to delete ID:", id);
-      const [result] = await db.query("DELETE FROM dates WHERE dateID = ?", [id]);
-      if (result.affectedRows === 0) {
-          return res.status(404).json({ error: "No record found with that ID" });
+    const [rows] = await db.query("SELECT dateDate FROM dates WHERE dateID = ?", [id]);
+    if (rows.length === 0) return res.status(404).json({ error: "No record found with that ID" });
+    if (isPastDate(rows[0].dateDate)) {
+      return res.status(400).json({ error: "Past dates cannot be deleted." });
+    }
+    if (financeClient.enabled()) {
+      try {
+        await financeClient.dateDeleted(id);
+      } catch (err) {
+        if (err.status !== 404) {
+          console.error('Finance date-deleted error', err);
+          return res.status(err.status || 500).json({ error: err.message || 'Finance delete failed' });
+        }
+        // 404 = date not in finance DB; still delete from Gigstr
       }
-      res.json({ success: true, message: "Entry expunged" });
-  } catch (err) { 
-      console.error("Delete Error:", err);
-      res.status(500).json({ error: "Delete failed" }); 
+    }
+    const [result] = await db.query("DELETE FROM dates WHERE dateID = ?", [id]);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "No record found with that ID" });
+    }
+    res.json({ success: true, message: "Entry expunged" });
+  } catch (err) {
+    console.error("Delete Error:", err);
+    res.status(500).json({ error: "Delete failed" });
   }
 });
 
@@ -235,10 +377,12 @@ router.get("/api/date/:id", async (req, res) => {
   const { id } = req.params;
   try {
     const sql = `
-      SELECT t1.*, v.venueName as dateVenue, v.venueCity as dateCity, v.venueCountry as dateCountry,
-      DATE_FORMAT(t1.dateDate, '%Y-%m-%d') as dateDate, 
-      b.bandName, b.bandColor, t3.statusName, t3.statusColor,
-      (SELECT COALESCE(SUM(p.amountEUR), 0) FROM payments p WHERE p.dateID = t1.dateID) AS datePaidAmount
+      SELECT t1.dateID, t1.dateDate, t1.bandID, t1.venueID, t1.dateStatus, t1.dateDescription,
+      t1.dateStart, t1.dateLoadin, t1.dateSoundcheck, t1.dateDoors, t1.dateCurfew,
+      t1.dateCategory, t1.dateContactOrganizer, t1.dateContactTech, t1.dateOwner,
+      v.venueName as dateVenue, v.venueCity as dateCity, v.venueCountry as dateCountry,
+      DATE_FORMAT(t1.dateDate, '%Y-%m-%d') as dateDate,
+      b.bandName, b.bandColor, t3.statusName, t3.statusColor
       FROM dates t1
       LEFT JOIN venues v ON t1.venueID = v.venueID
       LEFT JOIN bands b ON t1.bandID = b.bandID
@@ -247,122 +391,62 @@ router.get("/api/date/:id", async (req, res) => {
     `;
     const [rows] = await db.query(sql, [id]);
     if (rows.length === 0) return res.status(404).json({ error: "Gig not found" });
-    res.json(rows[0]);
-} catch (err) {
+    let row = rows[0];
+    if (!financeClient.enabled()) {
+      return res.status(503).json({ error: 'Finance service is required.' });
+    }
+    try {
+      const summary = await financeClient.summaryForDates([Number(id)]);
+      const s = summary[row.dateID];
+      if (s) row = { ...row, datePrice: s.gross, datePaidAmount: s.totalPaid, dateCurrency: s.currency || 'EUR' };
+    } catch (err) {
+      console.error('Date/:id finance summary error', err);
+      return res.status(503).json({ error: err.message || 'Finance service unavailable.' });
+    }
+    res.json(row);
+  } catch (err) {
     res.status(500).json({ error: "Server Error" });
-}
+  }
 });
 
-// ... (The payment routes remain unchanged as they don't query type/band directly)
 router.post("/api/dates/pay-single/:id", isGod, async (req, res) => {
     const { id: dateID } = req.params;
-    const paymentDate = new Date();
-    const connection = await db.getConnection();
 
-    try {
-        await connection.beginTransaction();
-
-        const [gigInfo] = await connection.query(`
-            SELECT 
-                d.datePrice, 
-                d.dateCurrency,
-                COALESCE((SELECT SUM(p.amountEUR) FROM payments p WHERE p.dateID = d.dateID), 0) AS totalPaid,
-                (SELECT exrateEurToRsd FROM exrate WHERE exrateID = 1) as exrateEurToRsd
-            FROM dates d
-            WHERE d.dateID = ?
-        `, [dateID]);
-
-        if (gigInfo.length === 0) {
-            throw new Error("Gig not found.");
-        }
-
-        const { datePrice, dateCurrency, totalPaid, exrateEurToRsd } = gigInfo[0];
-        const remainingBalance = parseFloat(datePrice) - parseFloat(totalPaid);
-
-        if (remainingBalance <= 0) {
-            await connection.rollback();
-            return res.status(400).json({ message: "This gig is already fully paid." });
-        }
-
-        const amountEUR = remainingBalance;
-        const amountOriginal = dateCurrency === 'RSD' ? amountEUR * exrateEurToRsd : amountEUR;
-
-        const insertSql = `
-            INSERT INTO payments 
-            (dateID, bulkGroup, amountEUR, amountOriginal, currency, exchangeRate, paymentDate) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        `;
-        const values = [dateID, null, amountEUR, amountOriginal, dateCurrency, exrateEurToRsd, paymentDate];
-        
-        await connection.query(insertSql, values);
-        await connection.query('UPDATE dates SET dateUpdated = NOW() WHERE dateID = ?', [dateID]);
-        await connection.commit();
-
-        res.json({ success: true, message: `Payment of ${amountEUR.toFixed(2)} EUR for gig ${dateID} processed.` });
-
-    } catch (err) {
-        await connection.rollback();
-        console.error("Single Pay Error:", err);
-        res.status(500).json({ error: "Failed to process single payment." });
-    } finally {
-        connection.release();
+    if (financeClient.enabled()) {
+      try {
+        const summary = await financeClient.summaryForDates([Number(dateID)]);
+        const s = summary[dateID];
+        if (!s) return res.status(404).json({ message: "Gig not found." });
+        const remainingBalance = Number(s.gross) - Number(s.totalPaid);
+        if (remainingBalance <= 0) return res.status(400).json({ message: "This gig is already fully paid." });
+        const [[exRow]] = await db.query("SELECT exrateEurToRsd FROM exrate WHERE exrateID = 1");
+        const exrateEurToRsd = exRow?.exrateEurToRsd || 117.3;
+        const amountOriginal = s.currency === 'RSD' ? remainingBalance * exrateEurToRsd : remainingBalance;
+        await financeClient.recordPayment(dateID, remainingBalance, amountOriginal, s.currency || 'EUR', exrateEurToRsd);
+        return res.json({ success: true, message: `Payment of ${remainingBalance.toFixed(2)} for gig ${dateID} processed.` });
+      } catch (err) {
+        console.error("Pay-single finance error:", err);
+        return res.status(err.status || 500).json({ error: err.message || "Failed to process payment." });
+      }
     }
+    return res.status(503).json({ error: 'Finance service is required.' });
 });
 
 router.post("/api/dates/pay-bulk", isGod, async (req, res) => {
-    const { payments, currency, exchangeRate } = req.body;
-    const paymentDate = new Date();
-    const bulkGroup = `bulk_${Date.now()}`;
-
-    if (!payments || !Array.isArray(payments) || payments.length === 0) {
+    const { payments: list, currency, exchangeRate } = req.body;
+    if (!list || !Array.isArray(list) || list.length === 0) {
         return res.status(400).json({ error: "Invalid payments data provided." });
     }
 
-    const connection = await db.getConnection();
-
+    if (!financeClient.enabled()) {
+      return res.status(503).json({ error: 'Finance service is required.' });
+    }
     try {
-        await connection.beginTransaction();
-
-        for (const payment of payments) {
-            const { id: dateID, amount: amountEUR } = payment; 
-            
-            if (!dateID || amountEUR == null || amountEUR <= 0) continue; 
-
-            const amountOriginal = currency === 'RSD' ? amountEUR * exchangeRate : amountEUR;
-
-            const sql = `
-                INSERT INTO payments 
-                (dateID, bulkGroup, amountEUR, amountOriginal, currency, exchangeRate, paymentDate) 
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            `;
-            const values = [dateID, bulkGroup, amountEUR, amountOriginal, currency, exchangeRate, paymentDate];
-            await connection.query(sql, values);
-        }
-
-        // Touch dateUpdated for all affected dates
-        const uniqueDateIds = Array.from(
-          new Set(
-            payments
-              .map((p) => p.id)
-              .filter((id) => id != null)
-          )
-        );
-        if (uniqueDateIds.length > 0) {
-          await connection.query(
-            `UPDATE dates SET dateUpdated = NOW() WHERE dateID IN (${uniqueDateIds.map(() => '?').join(',')})`,
-            uniqueDateIds
-          );
-        }
-
-        await connection.commit();
-        res.json({ success: true, message: `${payments.length} payments processed successfully.` });
-
+      await financeClient.recordPaymentsBulk(list, currency || 'EUR', exchangeRate);
+      return res.json({ success: true, message: `${list.length} payments processed successfully.` });
     } catch (err) {
-        await connection.rollback();
-        console.error("Bulk Pay Error:", err);
-        res.status(500).json({ error: "A failure occurred while processing bulk payment. The transaction was rolled back." });
-    } finally {
-        connection.release();
+      console.error("Pay-bulk finance error:", err);
+      return res.status(err.status || 500).json({ error: err.message || "Failed to process bulk payment." });
     }
 });
 

@@ -6,20 +6,22 @@ import PageWrapper from '../components/layouts/PageWrapper';
 import TwoColumnLayout from '../components/layouts/TwoColumnLayout';
 import Filtering from '../components/Filtering';
 import { useLanguage } from '../context/LanguageContext';
-import { useData } from '../context/DataContext'; // Import the global store
+import { useData } from '../context/DataContext';
+import { useExchangeRate } from '../hooks/useExchangeRate';
+import { formatDateUniform } from '../utils/dateFormat';
 
 const ValetView = () => {
   const { t } = useLanguage();
-  
-  // 1. Consume the global data
+  const { eurToRsd } = useExchangeRate();
+
   const { calendarDates: rawData, bands, loading, refreshData } = useData();
-  
+
   const [currencyView, setCurrencyView] = useState('EUR');
-  const [eurToRsd] = useState(117.2);
 
   const [bulkAmount, setBulkAmount] = useState('');
   const [viewMode, setViewMode] = useState('list');
   const [showLimit, setShowLimit] = useState(20);
+  const [currentPage, setCurrentPage] = useState(1);
   const [payModalItem, setPayModalItem] = useState(null);
   const [payModalLoading, setPayModalLoading] = useState(false);
 
@@ -69,8 +71,10 @@ const ValetView = () => {
     return { years, bandID: bandOptions };
   }, [rawData, bands]);
 
-  // 3. Process data for the Listings table
-  const processedData = useMemo(() => {
+  const PAGE_SIZE = 40;
+
+  // 3. Full filtered list (no slice)
+  const fullProcessedData = useMemo(() => {
     return rawData.filter(gig => {
       const gigDate = new Date(gig.dateDate);
       const today = new Date();
@@ -98,12 +102,30 @@ const ValetView = () => {
         rawBalance: balance,
         dateDescription: gig.bandName === 'Trosak' ? gig.dateDescription : ''
       };
-    }).slice(0, showLimit);
-  }, [rawData, activeFilters, currencyView, eurToRsd, showLimit]);
+    });
+  }, [rawData, activeFilters, currencyView, eurToRsd]);
+
+  const totalPages = useMemo(() => {
+    if (showLimit === 'all') return Math.max(1, Math.ceil(fullProcessedData.length / PAGE_SIZE));
+    return 1;
+  }, [showLimit, fullProcessedData.length]);
+
+  const processedData = useMemo(() => {
+    if (showLimit === 'all') {
+      const start = (currentPage - 1) * PAGE_SIZE;
+      return fullProcessedData.slice(start, start + PAGE_SIZE);
+    }
+    const limit = typeof showLimit === 'number' ? showLimit : 20;
+    return fullProcessedData.slice(0, limit);
+  }, [fullProcessedData, showLimit, currentPage]);
 
   const totalBalance = useMemo(() =>
-    processedData.reduce((acc, curr) => acc + curr.rawBalance, 0)
-  , [processedData]);
+    fullProcessedData.reduce((acc, curr) => acc + curr.rawBalance, 0)
+  , [fullProcessedData]);
+
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [activeFilters.year, activeFilters.bandID, showLimit]);
 
   // 4. Update payment functions to use refreshData(), memoized with useCallback
   const handlePaySingleConfirm = useCallback(async () => {
@@ -201,6 +223,31 @@ const ValetView = () => {
                 </button>
               )}
             />
+            {showLimit === 'all' && totalPages > 1 && (
+              <div className="flex items-center justify-between px-4 py-2 border-t border-slate-800 bg-slate-900/30">
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                  {t('filtering.page')} {currentPage} {t('filtering.of')} {totalPages}
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    disabled={currentPage <= 1}
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    className="text-[10px] font-black uppercase px-2 py-1 rounded border border-slate-600 text-slate-400 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800"
+                  >
+                    {t('filtering.prev')}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={currentPage >= totalPages}
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    className="text-[10px] font-black uppercase px-2 py-1 rounded border border-slate-600 text-slate-400 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800"
+                  >
+                    {t('filtering.next')}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         }
         sideContent={
@@ -229,7 +276,7 @@ const ValetView = () => {
         >
           <div className="space-y-4">
             <p className="text-sm text-slate-300">
-              {payModalItem.dateVenue} – {new Date(payModalItem.dateDate).toLocaleDateString()} – {payModalItem.rawBalance?.toFixed(2)} €
+              {payModalItem.dateVenue} – {formatDateUniform(payModalItem.dateDate)} – {payModalItem.rawBalance?.toFixed(2)} €
             </p>
             <div className="flex gap-2">
               <button

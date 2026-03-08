@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 
 const Settings = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('appearance');
   const { theme, setTheme, palettes } = useTheme();
   const { locale, setLocale, t, locales } = useLanguage();
+  const { user } = useAuth();
+  const canTranslate = user?.role === 'GOD' || user?.role === 'translator';
 
   const categories = [
     { id: 'appearance', labelKey: 'settings.appearance' },
@@ -26,6 +31,15 @@ const Settings = () => {
         <h1 className="text-[18px] font-black uppercase tracking-tighter text-white mb-6">
           {t('settings.title')}
         </h1>
+        {canTranslate && (
+          <button
+            type="button"
+            onClick={() => navigate('/translate')}
+            className="text-[10px] font-bold uppercase tracking-widest px-3 py-2 text-left rounded transition-all text-orange-500 hover:bg-orange-500/10 mb-2 w-full"
+          >
+            Translate
+          </button>
+        )}
         <nav className="flex md:flex-col gap-2">
           {categories.map((cat) => (
             <button

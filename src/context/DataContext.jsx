@@ -29,9 +29,7 @@ export const DataProvider = ({ children }) => {
 
   useEffect(() => {
     fetchGlobalData(true);
-    const pollingInterval = setInterval(() => {
-      }, 60000);
-      fetchGlobalData(false);
+    const pollingInterval = setInterval(() => fetchGlobalData(false), 60000);
     return () => clearInterval(pollingInterval);
   }, [fetchGlobalData]);
 

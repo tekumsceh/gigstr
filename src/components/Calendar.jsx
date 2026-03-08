@@ -8,11 +8,12 @@ function Calendar({ gigs = [], onSelectDate }) {
   const gigMap = useMemo(() => {
     const map = {};
     gigs.forEach(gig => {
-      const d = new Date(gig.dateDate);
-      const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      if (!map[dateKey]) {
-        map[dateKey] = [];
-      }
+      const raw = gig.dateDate ? String(gig.dateDate).trim() : '';
+      const dateKey = raw.length >= 10 ? raw.substring(0, 10) : (() => {
+        const d = new Date(gig.dateDate);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      })();
+      if (!map[dateKey]) map[dateKey] = [];
       map[dateKey].push(gig);
     });
     return map;
@@ -86,7 +87,7 @@ function Calendar({ gigs = [], onSelectDate }) {
           const d = new Date(item.year, item.month, item.day);
           const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
           
-          const dayGigs = item.isCurrentMonth ? (gigMap[dateStr] || []) : [];
+          const dayGigs = gigMap[dateStr] || [];
           const hasGigs = dayGigs.length > 0;
           const isToday = dateStr === todayStr;
           const isPast = d < todayObj;

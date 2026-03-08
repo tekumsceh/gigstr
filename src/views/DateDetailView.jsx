@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import VenueAutocomplete from '../components/VenueAutocomplete';
 import PageWrapper from '../components/layouts/PageWrapper';
 import SingleColumnLayout from '../components/layouts/SingleColumnLayout';
+import { formatDateUniform } from '../utils/dateFormat';
 
 function DateDetailView() {
   const { id } = useParams();
@@ -69,11 +70,22 @@ function DateDetailView() {
     if (!showDeleteModal) return;
     const finalId = showDeleteModal;
     setShowDeleteModal(false);
+    const rawDate = event?.dateDate ? String(event.dateDate).substring(0, 10) : null;
+    const eventDay = rawDate ? new Date(rawDate) : null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (eventDay) {
+      eventDay.setHours(0, 0, 0, 0);
+      if (eventDay < today) {
+        alert(t('dateDetail.cannotDeletePast') || 'Past dates cannot be deleted.');
+        return;
+      }
+    }
     try {
       const response = await deleteFromApi(`delete-date/${finalId}`);
       if (response.success) navigate('/');
     } catch (err) {
-      alert('Delete failed: ' + err.message);
+      alert(err?.response?.data?.error || 'Delete failed: ' + err.message);
     }
   };
 
@@ -81,13 +93,7 @@ function DateDetailView() {
   if (!event) return <div className="p-8 text-center text-red-500 uppercase font-black text-sm">{t('dateDetail.eventNotFound')}</div>;
 
   const rawDate = event.dateDate ? event.dateDate.substring(0, 10) : null;
-  const displayDate = rawDate
-    ? (() => {
-        const [y, m, d] = rawDate.split('-');
-        // Script-style: 23.03.2026
-        return `${d}.${m}.${y}`;
-      })()
-    : '—';
+  const displayDate = formatDateUniform(event.dateDate);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const eventDate = new Date(rawDate || 0);
@@ -138,6 +144,12 @@ function DateDetailView() {
             {t('common.back')}
           </button>
         </div>
+
+        {isPast && (
+          <p className="mb-3 px-4 sm:px-0 text-[11px] text-slate-500 uppercase tracking-wider">
+            {t('dateDetail.pastDisclaimer')}
+          </p>
+        )}
 
         <div className="w-full flex-1 min-h-0 flex flex-col bg-slate-900/20 border border-slate-800 rounded-lg overflow-visible">
           {/* Band row with edit icon */}

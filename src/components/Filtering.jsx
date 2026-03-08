@@ -87,7 +87,7 @@ function Filtering({
           onChange={(e) => update('bandID', e.target.value)}
           value={activeFilters?.bandID || 'all'}
         >
-          <option value="all" className="bg-slate-900 text-white">{t('filtering.allTypes')}</option>
+          <option value="all" className="bg-slate-900 text-white">{t('filtering.allBands')}</option>
           {options.bandID?.map(opt => (
             // FIX: Using opt.bandID for the key and value instead of opt.typeID, 
             // assuming your data structure uses bandID for bands.
@@ -104,23 +104,27 @@ function Filtering({
       {/* 3. SETTINGS & VIEW */}
       <div className="flex items-center gap-4">
         
-        {/* Row Limit Toggles */}
+        {/* Row Limit Toggles: 20, 40, All (all = 40 per page) */}
         {showRowLimit && onLimitChange && (
           <div className="flex items-center gap-2 border-l border-slate-800 pl-4">
             <span className="text-[8px] text-slate-500 font-black uppercase tracking-tighter">{t('filtering.rows')}</span>
             <div className="flex items-center gap-1">
-              {[20, 40].map(num => (
-                <button
-                  key={num}
-                  type="button" // Important so it doesn't trigger form submissions if used inside one
-                  onClick={() => onLimitChange(num)}
-                  className={`text-[9px] font-black px-2 py-0.5 rounded transition-all ${
-                    showLimit === num ? 'bg-slate-100 text-slate-950' : 'text-slate-500 hover:text-slate-200'
-                  }`}
-                >
-                  {num}
-                </button>
-              ))}
+              {[20, 40, 'all'].map((num) => {
+                const isAll = num === 'all';
+                const isActive = isAll ? showLimit === 'all' : showLimit === num;
+                return (
+                  <button
+                    key={isAll ? 'all' : num}
+                    type="button"
+                    onClick={() => onLimitChange(isAll ? 'all' : num)}
+                    className={`text-[9px] font-black px-2 py-0.5 rounded transition-all ${
+                      isActive ? 'bg-slate-100 text-slate-950' : 'text-slate-500 hover:text-slate-200'
+                    }`}
+                  >
+                    {isAll ? t('filtering.all') : num}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}

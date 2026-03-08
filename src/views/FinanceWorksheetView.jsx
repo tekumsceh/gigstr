@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import SingleColumnLayout from '../components/layouts/SingleColumnLayout';
 import PageWrapper from '../components/layouts/PageWrapper';
 import Modal from '../components/Modal';
+import { formatDateUniform } from '../utils/dateFormat';
 
 const FinanceWorksheetView = () => {
   const { id } = useParams();
@@ -175,7 +176,7 @@ const FinanceWorksheetView = () => {
                   {date.bandName || '—'} @ {date.venueName || '—'}
                 </div>
                 <div className="text-[var(--text-muted)]">
-                  {date.dateDate?.substring(0, 10)} • {date.venueCity || '—'},{' '}
+                  {formatDateUniform(date.dateDate)} • {date.venueCity || '—'},{' '}
                   {date.venueCountry || '—'}
                 </div>
                 <div className="mt-2 text-sm">

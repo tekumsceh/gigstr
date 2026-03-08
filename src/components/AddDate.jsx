@@ -88,7 +88,12 @@ function AddDate() {
 
   const onSubmit = async (data) => {
     try {
-      const payload = { ...data, bandID: parseInt(data.bandID) };
+      const bandID = parseInt(data.bandID, 10);
+      if (!Number.isInteger(bandID)) {
+        alert(t('addDate.selectIdentity') || 'Please select a band.');
+        return;
+      }
+      const payload = { ...data, bandID };
       const result = await postToApi("add-date", payload);
       if (result) {
         setShowModal(true);
@@ -96,7 +101,9 @@ function AddDate() {
         setTimeout(() => navigate('/'), 2500);
       }
     } catch (err) {
-      alert("Submission failed.");
+      const msg = err?.response?.data?.error || err?.message || 'Submission failed.';
+      console.error('Add date error:', err?.response?.data || err);
+      alert(msg);
     }
   };
 
@@ -160,11 +167,10 @@ function AddDate() {
                 </div>
                 <FormInput label={t('addDate.city')} id="dateCity" placeholder={t('addDate.cityPlaceholder')} error={errors.dateCity} {...register("dateCity", { required: t('addDate.cityRequired') })} />
                 <div className="space-y-2">
-                  <label htmlFor="dateVenue" className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1 block">{t('addDate.venue')}</label>
+                  <label htmlFor="dateVenue" className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1 block">{t('addDate.venue')} <span className="text-slate-600 normal-case font-normal">({t('addDate.optional') || 'optional'})</span></label>
                   <Controller
                     name="dateVenue"
                     control={control}
-                    rules={{ required: t('addDate.venueRequired') }}
                     render={({ field }) => (
                       <VenueAutocomplete
                         id="dateVenue"

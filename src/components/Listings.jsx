@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
+import { formatDateUniform } from '../utils/dateFormat';
 
 function getCurrencySymbol(currency) {
   const c = (currency || 'EUR').toUpperCase();
@@ -55,6 +56,8 @@ function Listings({ title, fields, manualData, loading, renderActions, onViewNot
             const rowKey = item.dateID || item.id || `row-${rowIndex}`;
             const bgColor = item.bandColor || '#334155';
             const dateObj = new Date(item.dateDate);
+            const today = new Date().setHours(0, 0, 0, 0);
+            const isPast = dateObj.setHours(0, 0, 0, 0) < today;
             if (isValetGrid) {
               const paid = parseFloat(item.datePaidAmount || 0);
               const price = parseFloat(item.datePrice || 0);
@@ -72,7 +75,7 @@ function Listings({ title, fields, manualData, loading, renderActions, onViewNot
                 <button
                   key={rowKey}
                   onClick={(e) => { e.stopPropagation(); onValetItemClick(item); }}
-                  className="flex flex-col p-4 rounded-lg text-left transition-all hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] min-h-[100px]"
+                  className={`flex flex-col p-4 rounded-lg text-left transition-all hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] min-h-[100px] ${isPast ? 'opacity-75' : ''}`}
                   style={{ backgroundColor: bgColor }}
                 >
                   <span className="text-[24px] font-black text-white tabular-nums leading-none">
@@ -91,7 +94,7 @@ function Listings({ title, fields, manualData, loading, renderActions, onViewNot
               <button
                 key={rowKey}
                 onClick={() => navigate(`/date/${rowKey}`)}
-                className="flex flex-col p-4 rounded-lg text-left transition-all hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] min-h-[100px]"
+                className={`flex flex-col p-4 rounded-lg text-left transition-all hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] min-h-[100px] ${isPast ? 'opacity-75' : ''}`}
                 style={{ backgroundColor: bgColor }}
               >
                 <span className="text-[24px] font-black text-white tabular-nums leading-none">
@@ -151,7 +154,7 @@ function Listings({ title, fields, manualData, loading, renderActions, onViewNot
                 <tr
                   key={rowKey}
                   onClick={() => navigate(`/date/${rowKey}`)}
-                  className="group cursor-pointer hover:bg-slate-800/30 transition-colors"
+                  className={`group cursor-pointer hover:bg-slate-800/30 transition-colors ${isPast ? 'bg-slate-900/60 opacity-90' : ''}`}
                   style={{ borderLeft: `3px solid ${accentColor}` }}
                 >
                   {fields.map((field, colIndex) => {
@@ -164,14 +167,9 @@ function Listings({ title, fields, manualData, loading, renderActions, onViewNot
                           className={`py-3 ${field === 'dateDate' ? 'pl-2 pr-4' : 'px-4'}`}
                         >
                           {field === 'dateDate' ? (
-                            <div className="flex flex-col items-center justify-center leading-tight py-1 w-fit">
-                              <span className="text-[28px] font-black text-white tabular-nums">
-                                {new Date(rawValue).getDate()}
-                              </span>
-                              <span className="text-[10px] font-black text-orange-500 uppercase tracking-widest mt-1">
-                                {new Date(rawValue).toLocaleString('en-GB', { month: 'short' })}
-                              </span>
-                            </div>
+                            <span className={`tabular-nums font-bold ${isPast ? 'text-slate-500' : 'text-white'}`}>
+                              {formatDateUniform(rawValue)}
+                            </span>
                           ) : 
                   /* NOTES LOGIC */
                         field === 'dateDescription' ? (
@@ -209,7 +207,7 @@ function Listings({ title, fields, manualData, loading, renderActions, onViewNot
                           </span>
                         ) : (
                           /* DEFAULT COLUMN LOGIC */
-                          <span className={`text-[12px] font-bold uppercase tracking-tight ${field === 'remainingBalance' ? 'text-white tabular-nums' : 'text-slate-300'}`}>
+                          <span className={`text-[12px] font-bold uppercase tracking-tight ${field === 'remainingBalance' ? (isPast ? 'text-slate-400 tabular-nums' : 'text-white tabular-nums') : isPast ? 'text-slate-500' : 'text-slate-300'}`}>
                             {rawValue || '—'}
                           </span>
                         )}

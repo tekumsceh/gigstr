@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import PageWrapper from '../components/layouts/PageWrapper';
 import SingleColumnLayout from '../components/layouts/SingleColumnLayout';
+import { formatDateUniform } from '../utils/dateFormat';
 
 const FILTERS = [
   { id: 'all', label: 'All' },
@@ -222,7 +223,7 @@ const MyWalletView = () => {
                         className="border-b border-[var(--border-subtle)] last:border-b-0"
                       >
                         <td className="py-1.5 pr-3">
-                          {item.dateDate ? String(item.dateDate).substring(0, 10) : '—'}
+                          {formatDateUniform(item.dateDate)}
                         </td>
                         <td className="py-1.5 pr-3">{item.bandName || '—'}</td>
                         <td className="py-1.5 pr-3">

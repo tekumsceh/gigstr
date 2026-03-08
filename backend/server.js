@@ -7,8 +7,9 @@ const authRoutes = require('./routes/authRoutes');
 const eventRoutes = require('./routes/eventRoutes');
 const bandRoutes = require('./routes/bandRoutes');
 const venueRoutes = require('./routes/venueRoutes');
-const financeTodoRoutes = require('./routes/financeTodoRoutes');
 const financeRoutes = require('./routes/financeRoutes');
+const translationRoutes = require('./routes/translationRoutes');
+const financeClient = require('./services/financeClient');
 const express = require('express');
 const mysql = require('mysql2/promise'); 
 const cors = require('cors');
@@ -40,12 +41,17 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(express.json());
+
+// Register before routers so they are always reachable (avoids router precedence issues)
+app.get('/api/health', (req, res) => res.json({ ok: true, message: 'Gigstr API', port: process.env.PORT || 5000 }));
+app.get('/api/band-admin-ping', (req, res) => res.json({ ok: true, message: 'Band admin routes available' }));
+
 app.use('/', authRoutes);
 app.use('/', eventRoutes);
 app.use('/', bandRoutes);
 app.use('/', venueRoutes);
-app.use('/', financeTodoRoutes);
 app.use('/', financeRoutes);
+app.use('/', translationRoutes);
 
 const isGod = (req, res, next) => {
     if (!req.isAuthenticated()) return res.status(401).json({ error: "Unauthorized: Please log in." });
@@ -81,31 +87,38 @@ cron.schedule('5 18 * * *', syncExchangeRate);
 // --- 4. GET ROUTES ---
 app.get("/api/valet-master-package", async (req, res) => {
     try {
+        if (!financeClient.enabled()) {
+            return res.status(503).json({ error: 'Finance service is required.' });
+        }
         const today = new Date().toISOString().split('T')[0];
-        const gigsSql = `
+        const baseSql = `
             SELECT d.dateID, v.venueName as dateVenue, v.venueCity as dateCity, v.venueCountry as dateCountry,
-            DATE_FORMAT(d.dateDate, '%Y-%m-%d') as dateDate, 
-            d.datePrice, d.bandID, t.bandName, 
-            COALESCE(SUM(p.amountEur), 0) AS totalPaid,
-            (d.datePrice - COALESCE(SUM(p.amountEur), 0)) AS remainingBalance
+            DATE_FORMAT(d.dateDate, '%Y-%m-%d') as dateDate, d.bandID, t.bandName
             FROM dates d
             LEFT JOIN venues v ON d.venueID = v.venueID
             LEFT JOIN type t ON d.bandID = t.typeID
-            LEFT JOIN payments p ON d.dateID = p.dateID
             WHERE d.dateDate <= ?
-            GROUP BY d.dateID
-            HAVING remainingBalance > 0.01
             ORDER BY d.dateDate ASC
         `;
-        const [gigs] = await db.query(gigsSql, [today]);
+        const rows = (await db.query(baseSql, [today]))[0];
+        const summary = rows.length > 0 ? await financeClient.summaryForDates(rows.map((g) => g.dateID)) : {};
+        const gigs = rows
+            .map((g) => {
+                const s = summary[g.dateID];
+                if (!s) return null;
+                const totalPaid = s.totalPaid ?? 0;
+                const remainingBalance = s.gross - totalPaid;
+                if (remainingBalance <= 0.01) return null;
+                return { ...g, datePrice: s.gross, totalPaid, remainingBalance };
+            })
+            .filter(Boolean);
         const [rates] = await db.query("SELECT * FROM exrate WHERE exrateID = 1");
         const [yearRows] = await db.query(`SELECT DISTINCT YEAR(dateDate) as year FROM dates ORDER BY year DESC`);
         const [types] = await db.query("SELECT typeID, bandName FROM type");
-
-        res.json({ 
-            gigs, 
-            rate: rates[0] || { exrateEurToRsd: 117.3 }, 
-            options: { bandID: types, years: yearRows.map(y => y.year) } 
+        res.json({
+            gigs,
+            rate: rates[0] || { exrateEurToRsd: 117.3 },
+            options: { bandID: types, years: yearRows.map((y) => y.year) }
         });
     } catch (error) {
         res.status(500).send("Server Error");

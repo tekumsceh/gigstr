@@ -44,7 +44,7 @@ const GlobalFooter = () => {
 
   const navItems = [
     { path: '/', labelKey: 'footer.home', icon: HomeIcon },
-    { path: '/add', labelKey: 'footer.addDate', icon: CalendarIcon },
+    { path: '/events', labelKey: 'footer.allEvents', icon: CalendarIcon },
     { path: '/valet', labelKey: 'footer.valet', icon: ValetIcon },
     { type: 'bands', labelKey: 'footer.myBands', icon: BandsIcon },
     { path: '/settings', labelKey: 'footer.settings', icon: SettingsIcon },
@@ -52,7 +52,7 @@ const GlobalFooter = () => {
 
   return (
     <>
-      <footer className="fixed bottom-0 left-0 w-full h-16 bg-slate-950 border-t border-slate-800 flex justify-around items-center px-4 z-40">
+      <footer className="w-full h-16 flex-shrink-0 bg-slate-950 border-t border-slate-800 flex justify-around items-center px-4 z-40">
         {navItems.map((item) => {
           if (item.type === 'bands') {
             return (

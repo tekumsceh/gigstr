@@ -7,20 +7,17 @@ import './index.css'
 import { AuthProvider } from './context/AuthContext.jsx'
 import { ThemeProvider } from './context/ThemeContext.jsx'
 import { LanguageProvider } from './context/LanguageContext.jsx'
-import { ViewportProvider } from './context/ViewportContext.jsx'
 import { DataProvider } from './context/DataContext.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ThemeProvider>
       <LanguageProvider>
-        <ViewportProvider>
-          <AuthProvider>
-            <DataProvider>
-              <App />
-            </DataProvider>
-          </AuthProvider>
-        </ViewportProvider>
+        <AuthProvider>
+          <DataProvider>
+            <App />
+          </DataProvider>
+        </AuthProvider>
       </LanguageProvider>
     </ThemeProvider>
   </StrictMode>,
