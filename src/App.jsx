@@ -14,8 +14,8 @@ import GlobalFooter from './components/layouts/GlobalFooter';
 import QuickActionFAB from './components/QuickActionFAB';
 import SettingsView from './views/SettingsView';
 import FinanceTodoView from './views/FinanceTodoView';
-import FinanceWorksheetView from './views/FinanceWorksheetView';
 import BandManagementView from './views/BandManagementView';
+import BandAdminView from './views/BandAdminView';
 
 function AppContent() {
   const { user } = useAuth();
@@ -39,20 +39,13 @@ function AppContent() {
             <Route path="/date/:id" element={<ProtectedRoute><DateDetailView /></ProtectedRoute>} />
             <Route path="/create-band" element={<ProtectedRoute><CreateBandView /></ProtectedRoute>} />
             <Route path="/band/:id/manage" element={<BandManagementView />} />
+            <Route path="/band/:id/admin" element={<ProtectedRoute><BandAdminView /></ProtectedRoute>} />
             <Route path="/settings" element={<SettingsView />} />
             <Route
               path="/finance-todo"
               element={
                 <ProtectedRoute requiredRole="GOD">
                   <FinanceTodoView />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/date/:id/finance"
-              element={
-                <ProtectedRoute requiredRole="GOD">
-                  <FinanceWorksheetView />
                 </ProtectedRoute>
               }
             />

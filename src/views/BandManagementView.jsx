@@ -100,13 +100,24 @@ useEffect(() => {
 
   return (
     <PageWrapper>
-      <div className="mb-8 p-10 border-b border-slate-800 bg-slate-950/40" style={{ borderLeft: `10px solid ${accentColor}` }}>
-        <h1 className="text-5xl font-black text-white uppercase tracking-tighter leading-none">
-          {band?.bandName}
-        </h1>
-        <span className="text-[12px] font-black text-slate-500 uppercase tracking-[0.4em] mt-2 block">
-          {t('bandManagement.rosterManagement')}
-        </span>
+      <div className="mb-8 p-10 border-b border-slate-800 bg-slate-950/40 flex items-center justify-between" style={{ borderLeft: `10px solid ${accentColor}` }}>
+        <div>
+          <h1 className="text-5xl font-black text-white uppercase tracking-tighter leading-none">
+            {band?.bandName}
+          </h1>
+          <span className="text-[12px] font-black text-slate-500 uppercase tracking-[0.4em] mt-2 block">
+            {t('bandManagement.rosterManagement')}
+          </span>
+        </div>
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => navigate(`/band/${id}/admin`)}
+            className="px-5 py-2 rounded-lg border border-orange-500/60 bg-orange-500/10 text-[10px] font-black uppercase tracking-[0.25em] text-orange-400 hover:bg-orange-500/20 hover:border-orange-400 transition-colors"
+          >
+            Admin / finances
+          </button>
+        )}
       </div>
 
       <TwoColumnLayout 

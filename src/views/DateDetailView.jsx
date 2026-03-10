@@ -343,13 +343,6 @@ function DateDetailView() {
                             {t('addDate.price')}: {price != null ? `${price}${sym}` : '—'}
                           </span>
                         )}
-                        <button
-                          type="button"
-                          onClick={() => navigate(`/date/${id}/finance`)}
-                          className="px-4 py-2 text-[10px] font-black uppercase tracking-widest rounded bg-emerald-700 hover:bg-emerald-600 text-white border border-emerald-600 transition-colors"
-                        >
-                          Open finance worksheet
-                        </button>
                       </>
                     )}
                     {user?.role !== 'GOD' && (
